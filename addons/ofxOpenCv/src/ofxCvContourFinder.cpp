@@ -4,12 +4,12 @@
 
 
 //--------------------------------------------------------------------------------
-bool sort_carea_compare( const CvSeq* a, const CvSeq* b) {
+static bool sort_carea_compare( const CvSeq* a, const CvSeq* b) {
+	
 	// use opencv to calc size, then sort based on size
-	float areaa = fabs(cvContourArea(a, CV_WHOLE_SEQ));
-	float areab = fabs(cvContourArea(b, CV_WHOLE_SEQ));
-
-    //return 0;
+	float areaa = cvContourArea(a, CV_WHOLE_SEQ);
+	float areab = cvContourArea(b, CV_WHOLE_SEQ);
+	
 	return (areaa > areab);
 }
 
@@ -61,6 +61,7 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
     // 320x240 image better to make two ofxCvContourFinder objects then to use
     // one, because you will get penalized less.
 
+    inputCopy.setUseTexture(false);
 	if( inputCopy.getWidth() == 0 ) {
 		inputCopy.allocate( _width, _height );
 	} else if( inputCopy.getWidth() != _width || inputCopy.getHeight() != _height ) {
@@ -69,14 +70,14 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
         inputCopy.allocate( _width, _height );
 	}
 
-    inputCopy = input;
     inputCopy.setROI( input.getROI() );
+    inputCopy = input;
 
 	CvSeq* contour_list = NULL;
 	contour_storage = cvCreateMemStorage( 1000 );
 	storage	= cvCreateMemStorage( 1000 );
 
-	CvContourRetrievalMode  retrieve_mode
+	int retrieve_mode
         = (bFindHoles) ? CV_RETR_LIST : CV_RETR_EXTERNAL;
 	cvFindContours( inputCopy.getCvImage(), contour_storage, &contour_list,
                     sizeof(CvContour), retrieve_mode, bUseApproximation ? CV_CHAIN_APPROX_SIMPLE : CV_CHAIN_APPROX_NONE );
@@ -84,9 +85,12 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
 
 	// put the contours from the linked list, into an array for sorting
 	while( (contour_ptr != NULL) ) {
-		float area = fabs( cvContourArea(contour_ptr, CV_WHOLE_SEQ) );
-		if( (area > minArea) && (area < maxArea) ) {
-            cvSeqBlobs.push_back(contour_ptr);
+		float area = cvContourArea(contour_ptr, CV_WHOLE_SEQ, bFindHoles); // oriented=true for holes
+		if(bFindHoles && area < 0) { // areas can be non negative in the case of holes
+			area = fabs(area);
+		}
+		if((area > minArea) && (area < maxArea)) {
+			cvSeqBlobs.push_back(contour_ptr);
 		}
 		contour_ptr = contour_ptr->h_next;
 	}
@@ -102,19 +106,29 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
     // cvSeqBlobs let's get the data out and into our structures that we like
 	for( int i = 0; i < MIN(nConsidered, (int)cvSeqBlobs.size()); i++ ) {
 		blobs.push_back( ofxCvBlob() );
-		float area = cvContourArea( cvSeqBlobs[i], CV_WHOLE_SEQ );
+		float area = cvContourArea( cvSeqBlobs[i], CV_WHOLE_SEQ, bFindHoles ); // oriented=true for holes
 		CvRect rect	= cvBoundingRect( cvSeqBlobs[i], 0 );
 		cvMoments( cvSeqBlobs[i], myMoments );
 
-		blobs[i].area                     = fabs(area);
-		blobs[i].hole                     = area < 0 ? true : false;
+		blobs[i].area                     = bFindHoles ? fabs(area) : area; // only return positive areas
 		blobs[i].length 			      = cvArcLength(cvSeqBlobs[i]);
 		blobs[i].boundingRect.x           = rect.x;
 		blobs[i].boundingRect.y           = rect.y;
 		blobs[i].boundingRect.width       = rect.width;
 		blobs[i].boundingRect.height      = rect.height;
-		blobs[i].centroid.x 			  = (int) (myMoments->m10 / myMoments->m00);
-		blobs[i].centroid.y 			  = (int) (myMoments->m01 / myMoments->m00);
+		blobs[i].centroid.x 			  = (myMoments->m10 / myMoments->m00);
+		blobs[i].centroid.y 			  = (myMoments->m01 / myMoments->m00);
+
+		if(bFindHoles) {
+			// for some reason, changing the orientation when looking for holes
+			// yields negative areas for non holes and positive areas for holes
+			//
+			// negating the value here works, even though it feels like a hack
+			blobs[i].hole                 = -area < 0 ? true : false; // negative area denotes a hole
+		}
+		else {
+			blobs[i].hole                 = false; // no holes
+		}
 
 		// get the points for the blob:
 		CvPoint           pt;
@@ -141,7 +155,7 @@ int ofxCvContourFinder::findContours( ofxCvGrayscaleImage&  input,
 }
 
 //--------------------------------------------------------------------------------
-void ofxCvContourFinder::draw( float x, float y, float w, float h ) {
+void ofxCvContourFinder::draw( float x, float y, float w, float h ) const {
 
     float scalex = 0.0f;
     float scaley = 0.0f;
@@ -156,20 +170,21 @@ void ofxCvContourFinder::draw( float x, float y, float w, float h ) {
         y -= anchor.y;
     }
 
+    ofPushStyle();
 	// ---------------------------- draw the bounding rectangle
-	ofSetColor(0xDD00CC);
-    glPushMatrix();
-    glTranslatef( x, y, 0.0 );
-    glScalef( scalex, scaley, 0.0 );
+	ofSetHexColor(0xDD00CC);
+    ofPushMatrix();
+    ofTranslate( x, y, 0.0 );
+    ofScale( scalex, scaley, 0.0 );
 
 	ofNoFill();
 	for( int i=0; i<(int)blobs.size(); i++ ) {
-		ofRect( blobs[i].boundingRect.x, blobs[i].boundingRect.y,
-                blobs[i].boundingRect.width, blobs[i].boundingRect.height );
+		ofDrawRectangle( blobs[i].boundingRect.x, blobs[i].boundingRect.y,
+                        blobs[i].boundingRect.width, blobs[i].boundingRect.height );
 	}
 
 	// ---------------------------- draw the blobs
-	ofSetColor(0x00FFFF);
+	ofSetHexColor(0x00FFFF);
 
 	for( int i=0; i<(int)blobs.size(); i++ ) {
 		ofNoFill();
@@ -180,7 +195,19 @@ void ofxCvContourFinder::draw( float x, float y, float w, float h ) {
 		ofEndShape();
 
 	}
-	glPopMatrix();
+	ofPopMatrix();
+	ofPopStyle();
+}
+
+
+//----------------------------------------------------------
+void ofxCvContourFinder::draw(const ofPoint & point) const{
+	draw(point.x, point.y);
+}
+
+//----------------------------------------------------------
+void ofxCvContourFinder::draw(const ofRectangle & rect) const{
+	draw(rect.x, rect.y, rect.width, rect.height);
 }
 
 //--------------------------------------------------------------------------------

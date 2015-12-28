@@ -1,97 +1,100 @@
 #include "ofAppRunner.h"
 
-//========================================================================
-// static variables:
+#include "ofBaseApp.h"
+#include "ofAppBaseWindow.h"
 
-ofBaseApp	*				OFSAptr = NULL;
-bool 						bMousePressed;
-bool						bRightButton;
-int							width, height;
-
-ofAppBaseWindow *			window = NULL;
-
-//========================================================================
-// core events instance & arguments
-#ifdef OF_USING_POCO
-ofCoreEvents 				ofEvents;
-ofEventArgs					voidEventArgs;
+#ifndef TARGET_NO_SOUND
+#include "ofSoundPlayer.h"
+#include "ofSoundStream.h"
 #endif
 
-//========================================================================
-// default windowing
-#ifdef TARGET_OF_IPHONE
-	#include "ofAppiPhoneWindow.h"
-#else
-	#include "ofAppGlutWindow.h"
+#include "ofImage.h"
+#include "ofUtils.h"
+#include "ofEvents.h"
+#include "ofMath.h"
+#include "ofGraphics.h"
+#include "ofGLRenderer.h"
+#include "ofGLProgrammableRenderer.h"
+#include "ofTrueTypeFont.h"
+#include "ofURLFileLoader.h"
+#include "ofMainLoop.h"
+
+
+// adding this for vc2010 compile: error C3861: 'closeQuicktime': identifier not found
+#if defined(OF_VIDEO_CAPTURE_QUICKTIME) || defined(OF_VIDEO_PLAYER_QUICKTIME)
+	#include "ofQtUtils.h"
+#endif
+
+#if defined (TARGET_WIN32)
+#include <mmsystem.h>
 #endif
 
 
 //--------------------------------------
-void ofSetupOpenGL(ofAppBaseWindow * windowPtr, int w, int h, int screenMode){
-	window = windowPtr;
-	window->setupOpenGL(w, h, screenMode);
+namespace{
+    shared_ptr<ofMainLoop> & mainLoop(){
+        static shared_ptr<ofMainLoop> * mainLoop(new shared_ptr<ofMainLoop>(new ofMainLoop));
+        return *mainLoop;
+    }
+
+    bool & initialized(){
+        static bool * initialized = new bool(false);
+        return *initialized;
+    }
+
+    #if defined(TARGET_LINUX) || defined(TARGET_OSX)
+        #include <signal.h>
+        #include <string.h>
+        void ofSignalHandler(int signum){
+            char* pSignalString = strsignal(signum);
+
+            if(pSignalString){
+                ofLogVerbose("ofSignalHandler") << pSignalString;
+            }else{
+                ofLogVerbose("ofSignalHandler") << "Unknown: " << signum;
+            }
+
+            signal(SIGTERM, nullptr);
+            signal(SIGQUIT, nullptr);
+            signal(SIGINT,  nullptr);
+            signal(SIGHUP,  nullptr);
+            signal(SIGABRT, nullptr);
+
+            if(mainLoop()){
+                mainLoop()->shouldClose(signum);
+            }
+        }
+    #endif
 }
 
 
-//--------------------------------------
-void ofSetupOpenGL(int w, int h, int screenMode){
-	#ifdef TARGET_OF_IPHONE
-		window = new ofAppiPhoneWindow();
-	#else
-		window = new ofAppGlutWindow();
-	#endif
-
-	window->setupOpenGL(w, h, screenMode);
-}
-
-//----------------------- 	gets called when the app exits
-// 							currently looking at who to turn off
-//							at the end of the application
 
 void ofExitCallback();
-void ofExitCallback(){
+void ofURLFileLoaderShutdown();
 
-	//------------------------
-	// try to close FMOD:
-	ofSoundPlayer::closeFmod();
-	//------------------------
-	// try to close quicktime, for non-linux systems:
+void ofInit(){
+	if(initialized()) return;
+	initialized() = true;
 
-	#if defined( TARGET_OSX ) || defined( TARGET_WIN32 )
-	closeQuicktime();
-	#endif
-
-
-	//------------------------
-	// try to close freeImage:
-	ofCloseFreeImage();
-	//------------------------
-	// try to close free type:
-	// ....
-
-	#ifdef WIN32_HIGH_RES_TIMING
-		timeEndPeriod(1);
-	#endif
-
-	if(OFSAptr)OFSAptr->exit();
-
-	#ifdef OF_USING_POCO
-		ofNotifyEvent( ofEvents.exit, voidEventArgs );
-	#endif
-
-	if(OFSAptr)delete OFSAptr;
-}
-
-//--------------------------------------
-void ofRunApp(ofBaseApp * OFSA){
-
-	OFSAptr = OFSA;
-	if(OFSAptr){
-	OFSAptr->mouseX = 0;
-	OFSAptr->mouseY = 0;
-	}
-
+#if defined(TARGET_ANDROID) || defined(TARGET_OF_IOS)
+    // manage own exit
+#else
 	atexit(ofExitCallback);
+#endif
+
+#if defined(TARGET_LINUX) || defined(TARGET_OSX)
+	// see http://www.gnu.org/software/libc/manual/html_node/Termination-Signals.html#Termination-Signals
+	signal(SIGTERM, &ofSignalHandler);
+	signal(SIGQUIT, &ofSignalHandler);
+	signal(SIGINT,  &ofSignalHandler);
+
+	signal(SIGHUP,  &ofSignalHandler); // not much to be done here
+
+	// http://www.gnu.org/software/libc/manual/html_node/Program-Error-Signals.html#Program-Error-Signals
+	signal(SIGABRT, &ofSignalHandler);  // abort signal
+#endif
+
+        of::priv::initutils();
 
 	#ifdef WIN32_HIGH_RES_TIMING
 		timeBeginPeriod(1);		// ! experimental, sets high res time
@@ -102,159 +105,352 @@ void ofRunApp(ofBaseApp * OFSA){
 								// remain high res, that could mess things
 								// up on your system.
 								// info here:http://www.geisswerks.com/ryan/FAQS/timing.html
-
 	#endif
 
-	window->initializeWindow();
+#ifdef TARGET_LINUX
+	if(std::locale().name() == "C"){
+		try{
+			std::locale::global(std::locale("C.UTF-8"));
+		}catch(...){
+			if(ofToLower(std::locale("").name()).find("utf-8")==std::string::npos){
+				ofLogWarning("ofInit") << "Couldn't set UTF-8 locale, string manipulation functions\n"
+						"won't work correctly for non ansi characters unless you specify a UTF-8 locale\n"
+						"manually using std::locale::global(std::locale(\"locale\"))\n"
+						"available locales can be queried with 'locale -a' in a terminal.";
+			}
+		}
+	}
+#endif
+}
 
-	ofSeedRandom();
-	ofResetElapsedTimeCounter();
+//--------------------------------------
+shared_ptr<ofMainLoop> ofGetMainLoop(){
+	return mainLoop();
+}
 
-	window->runAppViaInfiniteLoop(OFSAptr);
+//--------------------------------------
+void ofSetMainLoop(shared_ptr<ofMainLoop> newMainLoop) {
+	mainLoop() = newMainLoop;
+}
 
+//--------------------------------------
+int ofRunApp(ofBaseApp * OFSA){
+	return ofRunApp(shared_ptr<ofBaseApp>(OFSA));
+}
+
+//--------------------------------------
+int ofRunApp(shared_ptr<ofBaseApp> app){
+	mainLoop()->run(app);
+	auto ret = ofRunMainLoop();
+	app.reset();
+#if !defined(TARGET_ANDROID) && !defined(TARGET_OF_IOS)
+	ofExitCallback();
+#endif
+	return ret;
+}
+
+//--------------------------------------
+void ofRunApp(shared_ptr<ofAppBaseWindow> window, shared_ptr<ofBaseApp> app){
+	mainLoop()->run(window,app);
+}
+
+int ofRunMainLoop(){
+	auto ret = mainLoop()->loop();
+	return ret;
+}
+
+//--------------------------------------
+void ofSetupOpenGL(int w, int h, ofWindowMode screenMode){
+#ifdef TARGET_OPENGLES
+	ofGLESWindowSettings settings;
+	settings.glesVersion = 1;
+#else
+	ofGLWindowSettings settings;
+	settings.glVersionMajor = 2;
+	settings.glVersionMinor = 1;
+#endif
+
+	settings.width = w;
+	settings.height = h;
+	settings.windowMode = screenMode;
+	ofCreateWindow(settings);
+}
+
+shared_ptr<ofAppBaseWindow> ofCreateWindow(const ofWindowSettings & settings){
+	ofInit();
+	return mainLoop()->createWindow(settings);
+}
+
+//-----------------------	gets called when the app exits
+//							currently looking at who to turn off
+//							at the end of the application
+
+void ofExitCallback(){
+	if(!initialized()) return;
+
+	// controlled destruction of the mainLoop before
+	// any other deinitialization
+	mainLoop()->exit();
+
+	// everything should be destroyed here, except for
+	// static objects
+
+
+	// finish every library and subsystem
+	#ifndef TARGET_EMSCRIPTEN
+		ofURLFileLoaderShutdown();
+	#endif
+
+	#ifndef TARGET_NO_SOUND
+		//------------------------
+		// try to close engine if needed:
+		ofSoundShutdown();
+		//------------------------
+	#endif
+
+	// try to close quicktime, for non-linux systems:
+	#if defined(OF_VIDEO_CAPTURE_QUICKTIME) || defined(OF_VIDEO_PLAYER_QUICKTIME)
+	closeQuicktime();
+	#endif
+
+
+	//------------------------
+	// try to close freeImage:
+	ofCloseFreeImage();
+
+
+	#ifdef WIN32_HIGH_RES_TIMING
+		timeEndPeriod(1);
+	#endif
+
+	//------------------------
+	// try to close font libraries
+	ofTrueTypeShutdown();
+
+	// static deinitialization happens after this finishes
+	// every object should have ended by now and won't receive any
+	// events
+
+        of::priv::endutils();
+
+	initialized() = false;
+}
+
+//--------------------------------------
+// core events instance & arguments
+ofCoreEvents & ofEvents(){
+	return mainLoop()->events();
+}
+
+//--------------------------------------
+void ofSetEscapeQuitsApp(bool bQuitOnEsc){
+	mainLoop()->setEscapeQuitsLoop(bQuitOnEsc);
+}
+
+//--------------------------------------
+shared_ptr<ofBaseRenderer> & ofGetCurrentRenderer(){
+	return mainLoop()->getCurrentWindow()->renderer();
 }
 
 //--------------------------------------
 ofBaseApp * ofGetAppPtr(){
-	return OFSAptr;
+	return mainLoop()->getCurrentApp().get();
 }
 
 //--------------------------------------
-int ofGetFrameNum(){
-	return window->getFrameNum();
+ofAppBaseWindow * ofGetWindowPtr(){
+	return mainLoop()->getCurrentWindow().get();
 }
 
 //--------------------------------------
-float ofGetFrameRate(){
-	return window->getFrameRate();
+void ofSetAppPtr(shared_ptr<ofBaseApp> appPtr) {
+	//OFSAptr = appPtr;
 }
 
 //--------------------------------------
-void ofSetFrameRate(int targetRate){
-
-	window->setFrameRate(targetRate);
-}
-
-//--------------------------------------
-void ofSleepMillis(int millis){
-	#ifdef TARGET_WIN32
-		Sleep(millis);			//windows sleep in milliseconds
-	#else
-		usleep(millis * 1000);	//mac sleep in microseconds - cooler :)
-	#endif
+void ofExit(int status){
+	mainLoop()->shouldClose(status);
 }
 
 //--------------------------------------
 void ofHideCursor(){
-	window->hideCursor();
+	mainLoop()->getCurrentWindow()->hideCursor();
 }
 
 //--------------------------------------
 void ofShowCursor(){
-	window->showCursor();
+	mainLoop()->getCurrentWindow()->showCursor();
 }
 
+//--------------------------------------
+void ofSetOrientation(ofOrientation orientation, bool vFlip){
+	mainLoop()->getCurrentWindow()->setOrientation(orientation);
+	// TODO: every window should set orientation on it's renderer
+	if(ofGetCurrentRenderer()){
+		ofGetCurrentRenderer()->setOrientation(orientation,vFlip);
+	}
+}
+
+//--------------------------------------
+ofOrientation ofGetOrientation(){
+	return mainLoop()->getCurrentWindow()->getOrientation();
+}
 
 //--------------------------------------
 void ofSetWindowPosition(int x, int y){
-	window->setWindowPosition(x,y);
+	mainLoop()->getCurrentWindow()->setWindowPosition(x,y);
 }
 
 //--------------------------------------
 void ofSetWindowShape(int width, int height){
-	window->setWindowShape(width, height);
+	mainLoop()->getCurrentWindow()->setWindowShape(width, height);
 }
 
 //--------------------------------------
 int ofGetWindowPositionX(){
-	return (int)window->getWindowPosition().x;
+	return (int)mainLoop()->getCurrentWindow()->getWindowPosition().x;
 }
 
 //--------------------------------------
 int ofGetWindowPositionY(){
-	return (int)window->getWindowPosition().y;
+	return (int)mainLoop()->getCurrentWindow()->getWindowPosition().y;
 }
 
 //--------------------------------------
 int ofGetScreenWidth(){
-	return (int)window->getScreenSize().x;
+	return (int)mainLoop()->getCurrentWindow()->getScreenSize().x;
 }
 
 //--------------------------------------
 int ofGetScreenHeight(){
-	return (int)window->getScreenSize().y;
+	return (int)mainLoop()->getCurrentWindow()->getScreenSize().y;
 }
 
 //--------------------------------------------------
 int ofGetWidth(){
-	return (int)window->getWindowSize().x;
+	return (int)mainLoop()->getCurrentWindow()->getWidth();
 }
 //--------------------------------------------------
 int ofGetHeight(){
-	return (int)window->getWindowSize().y;
+	return (int)mainLoop()->getCurrentWindow()->getHeight();
+}
+
+//--------------------------------------------------
+int ofGetWindowWidth(){
+	return (int)mainLoop()->getCurrentWindow()->getWindowSize().x;
+}
+//--------------------------------------------------
+int ofGetWindowHeight(){
+	return (int)mainLoop()->getCurrentWindow()->getWindowSize().y;
+}
+
+//--------------------------------------------------
+bool ofDoesHWOrientation(){
+	return mainLoop()->getCurrentWindow()->doesHWOrientation();
+}
+
+//--------------------------------------------------
+ofPoint	ofGetWindowSize() {
+	//this can't be return ofPoint(ofGetWidth(), ofGetHeight()) as width and height change based on orientation.
+	return mainLoop()->getCurrentWindow()->getWindowSize();
+}
+
+//--------------------------------------------------
+float ofRandomWidth() {
+	return ofRandom(0.f, ofGetWidth());
+}
+
+//--------------------------------------------------
+float ofRandomHeight() {
+	return ofRandom(0.f, ofGetHeight());
+}
+
+//--------------------------------------------------
+ofRectangle	ofGetWindowRect() {
+	return ofRectangle(0, 0, ofGetWindowWidth(), ofGetWindowHeight());
 }
 
 //--------------------------------------
 void ofSetWindowTitle(string title){
-	window->setWindowTitle(title);
+	mainLoop()->getCurrentWindow()->setWindowTitle(title);
 }
 
 //----------------------------------------------------------
 void ofEnableSetupScreen(){
-	window->enableSetupScreen();
+	mainLoop()->getCurrentWindow()->enableSetupScreen();
 }
 
 //----------------------------------------------------------
 void ofDisableSetupScreen(){
-	window->disableSetupScreen();
+	mainLoop()->getCurrentWindow()->disableSetupScreen();
 }
 
 //--------------------------------------
 void ofToggleFullscreen(){
-	window->toggleFullscreen();
+	mainLoop()->getCurrentWindow()->toggleFullscreen();
 }
 
 //--------------------------------------
 void ofSetFullscreen(bool fullscreen){
-	window->setFullscreen(fullscreen);
+	mainLoop()->getCurrentWindow()->setFullscreen(fullscreen);
 }
 
 //--------------------------------------
 int ofGetWindowMode(){
-	return window->getWindowMode();
+	return mainLoop()->getCurrentWindow()->getWindowMode();
 }
 
 //--------------------------------------
 void ofSetVerticalSync(bool bSync){
-	//----------------------------
-	#ifdef TARGET_WIN32
-	//----------------------------
-		if (bSync) {
-			if (GLEE_WGL_EXT_swap_control) wglSwapIntervalEXT (1);
-		} else {
-			if (GLEE_WGL_EXT_swap_control) wglSwapIntervalEXT (0);
-		}
-	//----------------------------
-	#endif
-	//----------------------------
-
-	//--------------------------------------
-	#ifdef TARGET_OSX
-	//--------------------------------------
-		GLint sync = bSync == true ? 1 : 0;
-		CGLSetParameter (CGLGetCurrentContext(), kCGLCPSwapInterval, &sync);
-	//--------------------------------------
-	#endif
-	//--------------------------------------
-
-	//--------------------------------------
-	#ifdef TARGET_LINUX
-	//--------------------------------------
-		if (GLEE_GLX_SGI_swap_control) glXSwapIntervalSGI(bSync ? 1 : 0);
-	//--------------------------------------
-	#endif
-	//--------------------------------------
-
+	mainLoop()->getCurrentWindow()->setVerticalSync(bSync);
 }
 
+//-------------------------- native window handles
+#if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
+Display* ofGetX11Display(){
+	return mainLoop()->getCurrentWindow()->getX11Display();
+}
 
+Window  ofGetX11Window(){
+	return mainLoop()->getCurrentWindow()->getX11Window();
+}
+#endif
+
+#if defined(TARGET_LINUX) && !defined(TARGET_OPENGLES)
+GLXContext ofGetGLXContext(){
+	return mainLoop()->getCurrentWindow()->getGLXContext();
+}
+#endif
+
+#if defined(TARGET_LINUX) && defined(TARGET_OPENGLES)
+EGLDisplay ofGetEGLDisplay(){
+	return mainLoop()->getCurrentWindow()->getEGLDisplay();
+}
+
+EGLContext ofGetEGLContext(){
+	return mainLoop()->getCurrentWindow()->getEGLContext();
+}
+EGLSurface ofGetEGLSurface(){
+	return mainLoop()->getCurrentWindow()->getEGLSurface();
+}
+#endif
+
+#if defined(TARGET_OSX)
+void * ofGetNSGLContext(){
+	return mainLoop()->getCurrentWindow()->getNSGLContext();
+}
+
+void * ofGetCocoaWindow(){
+	return mainLoop()->getCurrentWindow()->getCocoaWindow();
+}
+#endif
+
+#if defined(TARGET_WIN32)
+HGLRC ofGetWGLContext(){
+	return mainLoop()->getCurrentWindow()->getWGLContext();
+}
+
+HWND ofGetWin32Window(){
+	return mainLoop()->getCurrentWindow()->getWin32Window();
+}
+#endif

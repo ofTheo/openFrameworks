@@ -1,42 +1,57 @@
-#ifndef _OFX_TCP_SERVER_
-#define _OFX_TCP_SERVER_
+#pragma once
 
 #include "ofConstants.h"
-#include "ofxThread.h"
+#include "ofThread.h"
 #include "ofxTCPManager.h"
+#include <map>
+#include <condition_variable>
 
 #define TCP_MAX_CLIENTS  32
 
 //forward decleration
 class ofxTCPClient;
 
-class ofxTCPServer : public ofxThread{
+class ofxTCPServer : public ofThread{
 
 	public:
 
 		ofxTCPServer();
 		~ofxTCPServer();
+
+		// ofxTCPServer can't be copied to avoid problems with destruction
+		ofxTCPServer(const ofxTCPServer & mom) = delete;
+		ofxTCPServer & operator=(const ofxTCPServer & mom) = delete;
+
 		void setVerbose(bool _verbose);
 		bool setup(int _port, bool blocking = false);
+		void setMessageDelimiter(std::string delim);
+	
 		bool close();
 		bool disconnectClient(int clientID);
+        bool disconnectAllClients();
 
-		int getNumClients();
+		int getNumClients(); //total number of clients - not sutible for iterating through clients with
+		int getLastID(); //this returns the last current id number if you want to loop through with a for loop 
+		
 		int getPort();
 		bool isConnected();
 
 		int getClientPort(int clientID);
-		string getClientIP(int clientID);
+		std::string getClientIP(int clientID);
 
-		bool isClientSetup(int clientID);
 		bool isClientConnected(int clientID);
 
 		//send data as a string - a short message
 		//is added to the end of the string which is
 		//used to indicate the end of the message to
 		//the receiver see: STR_END_MSG (ofTCPClient.h)
-		bool send(int clientID, string message);
-		bool sendToAll(string message);
+		bool send(int clientID, std::string message);
+		bool sendToAll(std::string message);
+
+
+		// same as send for binary data
+		bool sendRawMsg(int clientID, const char * rawMsg, const int numBytes);
+		bool sendRawMsgToAll(const char * rawMsg, const int numBytes);
 
 		//send and receive raw bytes lets you send and receive
 		//byte (char) arrays without modifiying or appending the data.
@@ -57,31 +72,37 @@ class ofxTCPServer : public ofxThread{
 		//eg: if you want to send "Hello World" from other
 		//software and want to receive it as a string
 		//sender should send "Hello World[/TCP]"
-		string receive(int clientID);
+		std::string receive(int clientID);
+
+		// same as receive for binary data
+		int receiveRawMsg(int clientID, char * receiveBytes,  int numBytes);
 
 		//pass in buffer to be filled - make sure the buffer
 		//is at least as big as numBytes
 		int receiveRawBytes(int clientID, char * receiveBytes,  int numBytes);
 
+		//fill a buffer as much as possible but leave the data on the TCP stack
+		//amount of filled-bytes returned
+		int peekReceiveRawBytes(int clientID, char * receiveBytes,  int numBytes);
 
-		//don't call this
-		//--------------------------
+		void waitConnectedClient();
+		void waitConnectedClient(int ms);
+
+	private:
+		ofxTCPClient & getClient(int clientID);
+		bool isClientSetup(int clientID);
+
 		void threadedFunction();
 
+		ofxTCPManager			TCPServer;
+		std::map<int,std::shared_ptr<ofxTCPClient> >	TCPConnections;
+		std::mutex					mConnectionsLock;
+        std::condition_variable serverReady;
 
-		ofxTCPManager	TCPServer;
-		ofxTCPClient *	TCPConnections;
-
-	protected:
-		bool			connected, verbose;
-		string			str;
-		int				count, port;
+		bool			connected;
+		std::string			str;
+		int				idCount, port;
 		bool			bClientBlocking;
+		std::string			messageDelimiter;
 
 };
-
-
-#endif
-
-
-

@@ -159,7 +159,7 @@ void ofxVectorGraphics::beginEPS(string fileName, int x, int y, int w, int h){
 	//this works fine as long
 	//as the window doesn't change size 
 	//while we are capturing!!!				
-	creeps.applyTranslation(0, ofGetHeight());
+	creeps.applyTranslation(0, h);
 	creeps.applyScaling(1, -1);
 }
 
@@ -202,7 +202,7 @@ void ofxVectorGraphics::noFill(){
 
 //----------------------------------------------------------			
 void ofxVectorGraphics::setLineWidth(float lineWidth){
-	glLineWidth((int)lineWidth);
+	ofSetLineWidth((int)lineWidth);
 	if(bRecord) creeps.setAttributes( CAtLineThickness(lineWidth) );
 }
 
@@ -224,7 +224,7 @@ void ofxVectorGraphics::setColor(int hexColor){
 
 //----------------------------------------------------------
 void ofxVectorGraphics::changeColor(float r, float g, float b){
-	glColor3f(r,g,b);
+	ofSetColor(ofFloatColor(r,g,b));
 	if(bRecord)creeps.setAttributes( CAtColor(r, g, b) );
 }
 
@@ -233,7 +233,7 @@ void ofxVectorGraphics::rect(float x1,float y1, float w, float h){
 	if(bDraw){
 		if(bCenter)ofSetRectMode(OF_RECTMODE_CENTER);
 		else ofSetRectMode(OF_RECTMODE_CORNER);
-		ofRect(x1, y1, w, h);
+		ofDrawRectangle(x1, y1, w, h);
 	}
 	if(bRecord){
 		if(bCenter){
@@ -249,7 +249,7 @@ void ofxVectorGraphics::rect(float x1,float y1, float w, float h){
 //----------------------------------------------------------
 void ofxVectorGraphics::triangle(float x1,float y1, float x2, float y2, float x3, float y3){
 	if(bDraw){
-		ofTriangle(x1, y1,  x2,  y2,  x3,  y3);
+		ofDrawTriangle(x1, y1,  x2,  y2,  x3,  y3);
 	}
 	if(bRecord){
 		creeps.startPath(x1, y1);
@@ -264,7 +264,7 @@ void ofxVectorGraphics::triangle(float x1,float y1, float x2, float y2, float x3
 //----------------------------------------------------------
 void ofxVectorGraphics::circle(float x1,float y1, float radius){
 	if(bDraw){
-		ofCircle(x1, y1, radius);
+		ofDrawCircle(x1, y1, radius);
 	}
 	if(bRecord){
 		if(bFill) creeps.disk(x1, y1, radius); 
@@ -275,7 +275,7 @@ void ofxVectorGraphics::circle(float x1,float y1, float radius){
 //----------------------------------------------------------
 void ofxVectorGraphics::ellipse(float x1,float y1, float w, float h){
 	if(bDraw){
-		ofEllipse(x1, y1, w, h);
+		ofDrawEllipse(x1, y1, w, h);
 	}
 	if(bRecord){
 		if(bFill){
@@ -291,7 +291,7 @@ void ofxVectorGraphics::ellipse(float x1,float y1, float w, float h){
 //----------------------------------------------------------
 void ofxVectorGraphics::line(float x1,float y1, float x2, float y2){
 	if(bDraw){
-		ofLine(x1, y1, x2, y2);
+		ofDrawLine(x1, y1, x2, y2);
 	}
 	if(bRecord){
 		creeps.line(x1, y1, x2, y2);
@@ -358,7 +358,7 @@ void ofxVectorGraphics::arc(float x, float y, float radius, float offsetAngleDeg
 //----------------------------------------------------------
 void ofxVectorGraphics::bezier(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4){
 	if(bDraw){
-		ofBezier(x1, y1, x2, y2, x3, y3, x4, y4);
+		ofDrawBezier(x1, y1, x2, y2, x3, y3, x4, y4);
 	}
 	if(bRecord){
 		if(bFill){
@@ -374,7 +374,7 @@ void ofxVectorGraphics::bezier(float x1, float y1, float x2, float y2, float x3,
 //----------------------------------------------------------
 void ofxVectorGraphics::curve(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4){
 	if(bDraw){
-		ofCurve(x1, y1, x2, y2, x3, y3, x4, y4);						
+		ofDrawCurve(x1, y1, x2, y2, x3, y3, x4, y4);
 	}
 	if(bRecord){
 	
@@ -513,7 +513,7 @@ void ofxVectorGraphics::endShape(bool bClose){
 			
 			//we go through and we calculate the bezier of each 
 			//catmull rom curve - smart right? :)
-			for (int i = 1; i< curvePts.size()-2; i++) {
+			for (unsigned int i = 1; i< curvePts.size()-2; i++) {
 				
 				ofPoint3 prevPt(	curvePts[i-1][0],	curvePts[i-1][1]);
 				ofPoint3 startPt(curvePts[i][0],		curvePts[i][1]);							

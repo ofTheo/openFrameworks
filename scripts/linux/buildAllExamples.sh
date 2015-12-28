@@ -1,18 +1,38 @@
 #!/bin/bash
 
 export LC_ALL=C
-cd ../../apps/examples
 
-for example in $( ls . )
+for category in $( find ../../examples/ -maxdepth 1 -type d )
 do
-echo "-----------------------------------------------------------------"
-echo "building " + $example
-cd $example
-#codeblocks --build --target="Debug" "$example.cbp"
-#codeblocks --build --target="Release" "$example.cbp"
-#make Debug
-make Release
-cd ../
-echo "-----------------------------------------------------------------"
-echo ""
+    if [ "$category" = "../../examples/android" -o "$category" = "../../examples/ios" -o "$category" = "../../examples/" ]; then
+        continue
+    fi
+
+    echo category $category
+    for example in $( find "$category" -maxdepth 1 -type d | grep -v osx )
+    do
+        if [ "$example" = "$category" ]; then
+            continue
+        fi
+
+        echo -----------------------------------------------------------------
+        echo building  $example
+
+        #projectGenerator .
+        make Debug -j2 -C "$example"
+        ret=$?
+        if [ $ret -ne 0 ]; then
+            echo error compiling $example
+            exit
+        fi
+        make Release -j2 -C "$example"
+        ret=$?
+        if [ $ret -ne 0 ]; then
+            echo error compiling $example
+            exit
+        fi
+
+        echo -----------------------------------------------------------------
+        echo
+    done
 done

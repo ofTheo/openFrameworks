@@ -9,9 +9,7 @@
 *
 */
 
-
-#ifndef OFX_CV_IMAGE_H
-#define OFX_CV_IMAGE_H
+#pragma once
 
 
 #include "ofxCvConstants.h"
@@ -24,7 +22,7 @@ class ofxCvBlob;
 
 
 
-class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHasPixels {
+class ofxCvImage : public ofBaseImage {
     
   public:
 
@@ -36,10 +34,14 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
     virtual  ~ofxCvImage();
     virtual void  allocate( int w, int h );
     virtual void  clear();
-	virtual float getWidth();        // get width of this image or its ROI width
-	virtual float getHeight();       // get height of this image or its ROI height
+	virtual float getWidth() const;        // get width of this image or its ROI width
+	virtual float getHeight() const;       // get height of this image or its ROI height
     virtual void  setUseTexture( bool bUse );
-    virtual ofTexture&  getTextureReference();
+    virtual bool isUsingTexture() const;
+    virtual ofTexture&  getTexture();
+	virtual const ofTexture & getTexture() const;
+	OF_DEPRECATED_MSG("Use getTexture",virtual ofTexture&  getTextureReference());
+	OF_DEPRECATED_MSG("Use getTexture",virtual const ofTexture & getTextureReference() const);
     virtual void flagImageChanged();  //mostly used internally
 
     
@@ -47,7 +49,7 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
     //
     virtual void  setROI( int x, int y, int w, int h );
     virtual void  setROI( const ofRectangle& rect );
-    virtual ofRectangle  getROI();
+    virtual ofRectangle  getROI() const;
     virtual void  resetROI();
     virtual ofRectangle  getIntersectionROI( const ofRectangle& rec1,
                                              const ofRectangle& rec2 );
@@ -59,8 +61,10 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
     virtual void  operator -= ( float value );
     virtual void  operator += ( float value );
 
-    virtual void  setFromPixels( unsigned char* _pixels, int w, int h ) = 0;
-    virtual void  setRoiFromPixels( unsigned char* _pixels, int w, int h ) = 0;
+    virtual void  setFromPixels( const unsigned char* _pixels, int w, int h ) = 0;
+    virtual void  setFromPixels( const ofPixels & pixels );
+    virtual void  setRoiFromPixels( const unsigned char* _pixels, int w, int h ) = 0;
+    virtual void  setRoiFromPixels( const ofPixels & pixels );
     virtual void  operator = ( const ofxCvGrayscaleImage& mom ) = 0;
     virtual void  operator = ( const ofxCvColorImage& mom ) = 0;
     virtual void  operator = ( const ofxCvFloatImage& mom ) = 0;
@@ -77,17 +81,23 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
 
     // Get Pixel Data
     //
-    virtual unsigned char*  getPixels() = 0;
-    virtual unsigned char*  getRoiPixels() = 0;
+    virtual ofPixels&		getPixels();
+    virtual ofPixels&		getRoiPixels();
     virtual IplImage*  getCvImage() { return cvImage; };
+    virtual const ofPixels&		getPixels() const;
+    virtual const ofPixels&		getRoiPixels() const;
+    virtual const IplImage*  getCvImage() const { return cvImage; };
 
 
     // Draw Image
     //
-    virtual void  draw( float x, float y );
-    virtual void  draw( float x, float y, float w, float h );
-    virtual void  drawROI( float x, float y );
-    virtual void  drawROI( float x, float y, float w, float h );
+    virtual void updateTexture();
+    virtual void draw( float x, float y ) const;
+    virtual void draw( float x, float y, float w, float h ) const;
+	virtual void draw(const ofPoint & point) const;
+	virtual void draw(const ofRectangle & rect) const;
+    virtual void drawROI( float x, float y ) const;
+    virtual void drawROI( float x, float y, float w, float h ) const;
     virtual void setAnchorPercent( float xPct, float yPct );
     virtual void setAnchorPoint( float x, float y );
     virtual void resetAnchor();
@@ -144,6 +154,8 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
 
   protected:
 
+    virtual void allocateTexture() = 0;
+    virtual void allocatePixels(int w, int h) = 0;
     bool matchingROI( const ofRectangle& rec1, const ofRectangle& rec2 );
     virtual void  setImageROI( IplImage* img, const ofRectangle& rect );
     virtual void  resetImageROI( IplImage* img );
@@ -153,6 +165,8 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
                                      
     virtual void swapTemp();  // swap cvImageTemp back
                               // to cvImage after an image operation
+    virtual IplImage*  getCv8BitsImage() { return cvImage; }
+    virtual IplImage*  getCv8BitsRoiImage() { return cvImage; }
                           
     IplImage*  cvImage;
     IplImage*  cvImageTemp;   // this is typically swapped back into cvImage
@@ -160,23 +174,19 @@ class ofxCvImage : public ofBaseDraws, public ofBaseHasTexture, public ofBaseHas
                               
     int ipldepth;             // IPL_DEPTH_8U, IPL_DEPTH_16U, IPL_DEPTH_32F, ...
     int iplchannels;          // 1, 3, 4, ...
-
-    int gldepth;              // GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_FLOAT, ...
-    int glchannels;           // GL_LUMINANCE, GL_RGB, GL_RGBA, ...
     
-    unsigned char* 	pixels;	  // not width stepped for getPixels(), allocated on demand
-    int  pixelsWidth;
-    int  pixelsHeight;
+    ofPixels pixels;	  // not width stepped for getPixels(), allocated on demand
+    ofPixels roiPixels;
     bool bPixelsDirty;        // pixels need to be reloaded
+    bool bRoiPixelsDirty;        // pixels need to be reloaded
     
-    ofTexture  tex;		      // internal tex
+    // the texture in this class is usually only update in draw
+    // to allow draw to be const we mark the texture as mutable
+    mutable ofTexture  tex;		      // internal tex
+    mutable bool bTextureDirty;       // texture needs to be reloaded before drawing
     bool bUseTexture;
-    bool bTextureDirty;       // texture needs to be reloaded before drawing
     
     ofPoint  anchor;
     bool  bAnchorIsPct;    
 
 };
-
-
-#endif

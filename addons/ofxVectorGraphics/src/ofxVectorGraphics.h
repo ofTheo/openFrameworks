@@ -1,5 +1,4 @@
-#ifndef VEC_GRAPHICS
-#define VEC_GRAPHICS
+#pragma once
 
 #include "CreEPS.hpp"
 #include "ofMain.h"
@@ -11,7 +10,7 @@
 	//ofNextContour
 	//shape -winding mode
 
-
+using namespace ns_creeps;
 
 class ofxVectorGraphics{
 
@@ -78,8 +77,3 @@ class ofxVectorGraphics{
 
 			vector<double *>curvePts;
 };
-
-
-#endif
-
-

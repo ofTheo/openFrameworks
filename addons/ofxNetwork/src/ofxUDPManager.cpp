@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_DEPRECATE
 
 #include "ofxUDPManager.h"
+#include "ofxNetworkUtils.h"
 
 //--------------------------------------------------------------------------------
 bool ofxUDPManager::m_bWinsockInit= false;
@@ -20,8 +21,8 @@ ofxUDPManager::ofxUDPManager()
 	#endif
 
 	m_hSocket= INVALID_SOCKET;
-	m_dwTimeoutReceive=	OF_UDP_DEFAULT_TIMEOUT;
-	m_iListenPort= -1;
+	m_dwTimeoutReceive = OF_UDP_DEFAULT_TIMEOUT;
+    m_dwTimeoutSend = OF_UDP_DEFAULT_TIMEOUT;
 
 	canGetRemoteAddress	= false;
 	nonBlocking			= true;
@@ -42,6 +43,7 @@ bool ofxUDPManager::Close()
 		if(close(m_hSocket) == SOCKET_ERROR)
 	#endif
 	{
+		ofxNetworkCheckError();
 		return(false);
 	}
 	m_hSocket= INVALID_SOCKET;
@@ -59,12 +61,57 @@ bool ofxUDPManager::Create()
 	{
 		int unused = true;
 		setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&unused, sizeof(unused));
+		#ifdef __APPLE__   // MacOS/X requires an additional call
+			setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEPORT, (char*)&unused, sizeof(unused));
+		#endif
 	}
-	return(m_hSocket !=	INVALID_SOCKET);
+	bool ret = m_hSocket !=	INVALID_SOCKET;
+	if(!ret) ofxNetworkCheckError();
+	return ret;
+}
+
+
+//--------------------------------------------------------------------------------
+int ofxUDPManager::WaitReceive(time_t timeoutSeconds, time_t timeoutMicros){
+	if (m_hSocket == INVALID_SOCKET) return SOCKET_ERROR;
+
+	fd_set fd;
+	FD_ZERO(&fd);
+	FD_SET(m_hSocket, &fd);
+	timeval	tv;
+	tv.tv_sec = timeoutSeconds;
+	tv.tv_usec = timeoutMicros;
+	auto ret = select(m_hSocket+1,&fd,NULL,NULL,&tv);
+	if(ret == 0){
+		return SOCKET_TIMEOUT;
+	}else if(ret < 0){
+		return SOCKET_ERROR;
+	}else{
+		return 0;
+	}
 }
 
 //--------------------------------------------------------------------------------
-///Theo added - Choose to set nonBLocking - default mode is to block
+int ofxUDPManager::WaitSend(time_t timeoutSeconds, time_t timeoutMicros){
+	if (m_hSocket == INVALID_SOCKET) return SOCKET_ERROR;
+
+	fd_set fd;
+	FD_ZERO(&fd);
+	FD_SET(m_hSocket, &fd);
+	timeval	tv;
+	tv.tv_sec = timeoutSeconds;
+	tv.tv_usec = timeoutMicros;
+	auto ret = select(m_hSocket+1,NULL,&fd,NULL,&tv);
+	if(ret == 0){
+		return SOCKET_TIMEOUT;
+	}else if(ret < 0){
+		return SOCKET_ERROR;
+	}else{
+		return 0;
+	}
+}
+
+//--------------------------------------------------------------------------------
 bool ofxUDPManager::SetNonBlocking(bool useNonBlocking)
 {
 	nonBlocking		= useNonBlocking;
@@ -77,7 +124,9 @@ bool ofxUDPManager::SetNonBlocking(bool useNonBlocking)
 		int retVal = ioctl(m_hSocket,FIONBIO,&arg);
 	#endif
 
-	return (retVal >= 0);
+	bool ret=(retVal >= 0);
+	if(!ret) ofxNetworkCheckError();
+	return ret;
 }
 
 //--------------------------------------------------------------------------------
@@ -87,17 +136,10 @@ bool ofxUDPManager::Bind(unsigned short usPort)
 	saServer.sin_addr.s_addr = INADDR_ANY;
 	//Port MUST	be in Network Byte Order
 	saServer.sin_port =	htons(usPort);
+	int ret = ::bind(m_hSocket,(struct sockaddr*)&saServer,sizeof(struct sockaddr));
+	if(ret == SOCKET_ERROR) ofxNetworkCheckError();
 
-	int	ret	= bind(m_hSocket,(struct sockaddr*)&saServer,sizeof(struct sockaddr));
-
-	//not using this var anyway but maybe should leave it in for debug
-	#ifdef TARGET_WIN32
-		int	err	= WSAGetLastError();
-	#else
-		int err = errno;
-	#endif
-
-	return (ret	== 0);
+	return (ret == 0);
 }
 
 //--------------------------------------------------------------------------------
@@ -106,7 +148,7 @@ bool ofxUDPManager::BindMcast(char *pMcast, unsigned short usPort)
 	// bind to port
 	if (!Bind(usPort))
 	{
-		printf("can't bind to port \n");
+		ofLogWarning("ofxUDPManager") << "BindMcast(): couldn't bind to port " << usPort;
 		return false;
 	}
 
@@ -117,10 +159,10 @@ bool ofxUDPManager::BindMcast(char *pMcast, unsigned short usPort)
 
 	if (setsockopt(m_hSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char FAR*) &mreq, sizeof (mreq)) == SOCKET_ERROR)
 	{
-		//printf("setsockopt failed! Error: %d", WSAGetLastError());
+		ofxNetworkCheckError();
 		return false;
 	}
-	printf("here ? \n");
+
 	// multicast bind successful
 	return true;
 }
@@ -140,7 +182,7 @@ bool ofxUDPManager::Connect(const char *pHost, unsigned short usPort)
 	saClient.sin_family= AF_INET; // host byte order
 	saClient.sin_port  = htons(usPort);	// short, network byte order
 	//	saClient.sin_addr  = *((struct g_addr *)he->h_addr_list);
-	//cout << inet_addr( pHost ) << endl;
+	//ofLogNotice("ofxUDPManager") << "Connect(): connected to " << inet_addr( pHost );
 	//saClient.sin_addr.s_addr= inet_addr( pHost );
 	//saClient.sin_addr = *((struct in_addr *)he->h_addr);
 	memcpy((char *) &saClient.sin_addr.s_addr,
@@ -159,7 +201,8 @@ bool ofxUDPManager::ConnectMcast(char* pMcast, unsigned short usPort)
 	if (!Bind(usPort))
 	{
 #ifdef _DEBUG
-		printf("Binding socket failed! Error: %d", WSAGetLastError());
+		ofLogError("ofxUDPManager") << "ConnectMcast(): couldn't bind to " << usPort;
+		ofxNetworkCheckError();
 #endif
 		return false;
 	}
@@ -168,14 +211,16 @@ bool ofxUDPManager::ConnectMcast(char* pMcast, unsigned short usPort)
 	if (!SetTTL(1))
 	{
 #ifdef _DEBUG
-		printf("SetTTL failed. Continue anyway. Error: %d", WSAGetLastError());
+		ofLogWarning("ofxUDPManager") << "ConnectMcast(): couldn't set TTL; continuing anyway"; 
+		ofxNetworkCheckError();
 #endif
 	}
 
 	if (!Connect(pMcast, usPort))
 	{
 #ifdef _DEBUG
-		printf("Connecting socket failed! Error: %d", WSAGetLastError ());
+		ofLogError("ofxUDPManager") << " ConnectMcast(): couldn't connect to socket";
+		ofxNetworkCheckError();
 #endif
 		return false;
 	}
@@ -192,19 +237,16 @@ int	ofxUDPManager::Send(const char* pBuff,	const int iSize)
 {
 	if (m_hSocket == INVALID_SOCKET) return(SOCKET_ERROR);
 
-	/*if (m_dwTimeoutSend	!= NO_TIMEOUT)
-	{
-		fd_set fd;
-		FD_ZERO(&fd);
-		FD_SET(m_hSocket, &fd);
-		timeval	tv=	{m_dwTimeoutSend, 0};
-		if(select(m_hSocket+1,NULL,&fd,NULL,&tv)== 0)
-		{
-			return(SOCKET_TIMEOUT);
+	if (m_dwTimeoutSend	!= NO_TIMEOUT){
+		auto ret = WaitSend(m_dwTimeoutSend,0);
+		if(ret!=0){
+			return ret;
 		}
-	}*/
+	}
 
-	return (sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr)));
+	int ret = sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr));
+	if(ret==-1) ofxNetworkCheckError();
+	return ret;
 	//	return(send(m_hSocket, pBuff, iSize, 0));
 }
 
@@ -216,37 +258,79 @@ int	ofxUDPManager::SendAll(const char*	pBuff, const int iSize)
 {
 	if (m_hSocket == INVALID_SOCKET) return(SOCKET_ERROR);
 
-	if (m_dwTimeoutSend	!= NO_TIMEOUT)
-	{
-		fd_set fd;
-		FD_ZERO(&fd);
-		FD_SET(m_hSocket, &fd);
-		timeval	tv=	{m_dwTimeoutSend, 0};
-		if(select(m_hSocket+1,NULL,&fd,NULL,&tv)== 0)
-		{
-			return(SOCKET_TIMEOUT);
+	auto timestamp = ofGetElapsedTimeMicros();
+	auto timeleftSecs = m_dwTimeoutSend;
+	auto timeleftMicros = 0;
+	int total= 0;
+	int bytesleft = iSize;
+	int ret=-1;
+
+	while (total < iSize) {
+		if (m_dwTimeoutSend	!= NO_TIMEOUT){
+			auto ret = WaitSend(timeleftSecs,timeleftMicros);
+			if(ret!=0){
+				return ret;
+			}
+		}
+		ret = sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr));
+		if (ret == SOCKET_ERROR) {
+			return SOCKET_ERROR;
+		}
+		total += ret;
+		bytesleft -=ret;
+		if (m_dwTimeoutSend	!= NO_TIMEOUT){
+			auto now = ofGetElapsedTimeMicros();
+			auto diff = now - timestamp;
+			if (diff > m_dwTimeoutSend * 1000000){
+				return SOCKET_TIMEOUT;
+			}
+			float timeFloat = m_dwTimeoutSend - diff/1000000.;
+			timeleftSecs = timeFloat;
+			timeleftMicros = (timeFloat - timeleftSecs) * 1000000;
 		}
 	}
 
-
-	int	total= 0;
-	int	bytesleft =	iSize;
-	int	n=0;
-
-	while (total < iSize)
-	{
-		n =	sendto(m_hSocket, (char*)pBuff,	iSize, 0, (sockaddr *)&saClient, sizeof(sockaddr));
-		if (n == -1)
-			{
-				break;
-			}
-		total += n;
-		bytesleft -=n;
-	}
-
-	return n==-1?SOCKET_ERROR:total;
+	return total;
 }
 
+
+//--------------------------------------------------------------------------------
+//	returns number of bytes wiating or SOCKET_ERROR if error
+int	ofxUDPManager::PeekReceive()
+{
+	if (m_hSocket == INVALID_SOCKET){
+		ofLogError("INVALID_SOCKET");
+		return SOCKET_ERROR;
+	}
+
+	if (m_dwTimeoutReceive	!= NO_TIMEOUT){
+		auto ret = WaitReceive(m_dwTimeoutReceive,0);
+		if(ret!=0){
+			return ret;
+		}
+	}
+
+	//	we can use MSG_PEEK, but we still need a large buffer (udp protocol max is 64kb even if max for this socket is less)
+	//	don't want a 64kb stack item here, so instead read how much can be read (note: not queue size, there may be more data-more packets)
+	#ifdef TARGET_WIN32
+			unsigned long size = 0;
+			int retVal = ioctlsocket(m_hSocket,FIONREAD,&size);
+	#else
+			int size  = 0;
+			int retVal = ioctl(m_hSocket,FIONREAD,&size);
+	#endif
+	
+	//	error
+	if ( retVal != 0 )
+	{
+		//assert( Result == SOCKET_ERROR );
+		//	report error
+		ofxNetworkCheckError();
+		return SOCKET_ERROR;
+	}
+
+	return size;
+}
 
 
 //--------------------------------------------------------------------------------
@@ -256,22 +340,17 @@ int	ofxUDPManager::SendAll(const char*	pBuff, const int iSize)
 int	ofxUDPManager::Receive(char* pBuff, const int iSize)
 {
 	if (m_hSocket == INVALID_SOCKET){
-		printf("INVALID_SOCKET");
+		ofLogError("ofxUDPManager") << "INVALID_SOCKET";
 		return(SOCKET_ERROR);
 
 	}
 
-	/*if (m_dwTimeoutSend	!= NO_TIMEOUT)
-	{
-		fd_set fd;
-		FD_ZERO(&fd);
-		FD_SET(m_hSocket, &fd);
-		timeval	tv=	{m_dwTimeoutSend, 0};
-		if(select(m_hSocket+1,&fd,NULL,NULL,&tv)== 0)
-		{
-			return(SOCKET_TIMEOUT);
+	if (m_dwTimeoutReceive	!= NO_TIMEOUT){
+		auto ret = WaitReceive(m_dwTimeoutReceive,0);
+		if(ret!=0){
+			return ret;
 		}
-	}*/
+	}
 
 	#ifndef TARGET_WIN32
 		socklen_t nLen= sizeof(sockaddr);
@@ -286,13 +365,17 @@ int	ofxUDPManager::Receive(char* pBuff, const int iSize)
 
 	if (ret	> 0)
 	{
-				//printf("\nreceived from: %s\n",	inet_ntoa((in_addr)saClient.sin_addr));
+		//ofLogNotice("ofxUDPManager") << "received from: " << inet_ntoa((in_addr)saClient.sin_addr);
 		canGetRemoteAddress= true;
 	}
 	else
 	{
-				//printf("\nreceived from: ????\n");
-		canGetRemoteAddress= false;
+		canGetRemoteAddress = false;
+
+		//	if the network error is WOULDBLOCK, then return 0 instead of SOCKET_ERROR as it's not really a problem, just no data.
+		int SocketError = ofxNetworkCheckError();
+		if ( SocketError == OFXNETWORK_ERROR(WOULDBLOCK) )
+			return 0;
 	}
 
 	return ret;
@@ -317,12 +400,33 @@ int	ofxUDPManager::GetTimeoutReceive()
 }
 
 //--------------------------------------------------------------------------------
-bool ofxUDPManager::GetRemoteAddr(char* address)
+bool ofxUDPManager::GetRemoteAddr(string& address,int& port) const
 {
 	if (m_hSocket == INVALID_SOCKET) return(false);
 	if ( canGetRemoteAddress ==	false) return (false);
 
-	strcpy(address,	inet_ntoa((in_addr)saClient.sin_addr));
+	//	get the static-winsock-allocated address-conversion string and make a copy of it
+	const char* AddressStr = inet_ntoa((in_addr)saClient.sin_addr);
+	address = AddressStr;
+
+	//	get the port
+	port = ntohs(saClient.sin_port);
+
+	return true;
+}
+
+//--------------------------------------------------------------------------------
+bool ofxUDPManager::GetListenAddr(string& address,int& port) const
+{
+	if (m_hSocket == INVALID_SOCKET) return(false);
+
+	//	get the static-winsock-allocated address-conversion string and make a copy of it
+	const char* AddressStr = inet_ntoa((in_addr)saServer.sin_addr);
+	address = AddressStr;
+
+	//	get the port
+	port = ntohs(saServer.sin_port);
+
 	return true;
 }
 
@@ -339,8 +443,8 @@ int	ofxUDPManager::GetMaxMsgSize()
 		int size = sizeof(int);
 	#endif
 
-	getsockopt(m_hSocket, SOL_SOCKET, SO_MAX_MSG_SIZE, (char*)&sizeBuffer, &size);
-
+	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_MAX_MSG_SIZE, (char*)&sizeBuffer, &size);
+	if(ret==-1) ofxNetworkCheckError();
 	return sizeBuffer;
 }
 
@@ -357,8 +461,8 @@ int	ofxUDPManager::GetReceiveBufferSize()
 		int size = sizeof(int);
 	#endif
 
-	getsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeBuffer, &size);
-
+	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeBuffer, &size);
+	if(ret==-1) ofxNetworkCheckError();
 	return sizeBuffer;
 }
 
@@ -367,10 +471,12 @@ bool ofxUDPManager::SetReceiveBufferSize(int sizeInByte)
 {
 	if (m_hSocket == INVALID_SOCKET) return(false);
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0)
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_RCVBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0){
 		return true;
-	else
+	}else{
+		ofxNetworkCheckError();
 		return false;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -386,7 +492,8 @@ int	ofxUDPManager::GetSendBufferSize()
 		int size = sizeof(int);
 	#endif
 
-	getsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeBuffer, &size);
+	int ret = getsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeBuffer, &size);
+	if(ret==-1) ofxNetworkCheckError();
 
 	return sizeBuffer;
 }
@@ -396,10 +503,12 @@ bool ofxUDPManager::SetSendBufferSize(int sizeInByte)
 {
 	if (m_hSocket == INVALID_SOCKET) return(false);
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0)
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sizeInByte, sizeof(sizeInByte)) == 0){
 		return true;
-	else
+	}else{
+		ofxNetworkCheckError();
 		return false;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -411,10 +520,12 @@ bool ofxUDPManager::SetReuseAddress(bool allowReuse)
 	if (allowReuse)	on=1;
 	else			on=0;
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) ==	0)
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on)) ==	0){
 		return true;
-	else
+	}else{
+		ofxNetworkCheckError();
 		return false;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -424,10 +535,12 @@ bool ofxUDPManager::SetEnableBroadcast(bool enableBroadcast)
 	if (enableBroadcast)	on=1;
 	else					on=0;
 
-	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_BROADCAST, (char*)&on, sizeof(on)) ==	0)
+	if ( setsockopt(m_hSocket, SOL_SOCKET, SO_BROADCAST, (char*)&on, sizeof(on)) ==	0){
 		return true;
-	else
+	}else{
+		ofxNetworkCheckError();
 		return false;
+	}
 }
 
 //--------------------------------------------------------------------------------
@@ -446,8 +559,9 @@ int ofxUDPManager::GetTTL()
 	if (getsockopt(m_hSocket, IPPROTO_IP, IP_MULTICAST_TTL, (char FAR *) &nTTL, &nSize) == SOCKET_ERROR)
 	{
 #ifdef _DEBUG
-		printf("getsockopt failed! Error: %d", WSAGetLastError());
+		ofLogError("ofxUDPManager") << "GetTTL(): getsockopt failed";
 #endif
+		ofxNetworkCheckError();
 		return -1;
 	}
 
@@ -463,8 +577,9 @@ bool ofxUDPManager::SetTTL(int nTTL)
 	if (setsockopt(m_hSocket, IPPROTO_IP, IP_MULTICAST_TTL, (char FAR *)&nTTL, sizeof (int)) == SOCKET_ERROR)
 	{
 #ifdef _DEBUG
-		printf("setsockopt failed! Error: %d", WSAGetLastError());
+		ofLogError("ofxUDPManager") << "SetTTL(): setsockopt failed";
 #endif
+		ofxNetworkCheckError();
 		return false;
 	}
 

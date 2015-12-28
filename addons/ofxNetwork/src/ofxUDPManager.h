@@ -1,6 +1,4 @@
-#ifndef  ___ofxUDPManager__H__
-#define  ___ofxUDPManager__H__
-
+#pragma once
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Original author: ???????? we think Christian Naglhofer
@@ -121,9 +119,10 @@ public:
 	//destructor
 	virtual ~ofxUDPManager()
 	{
-		if ((m_hSocket)&&(m_hSocket != INVALID_SOCKET)) Close();
+		if (HasSocket()) Close();
 	}
 
+	bool	HasSocket() const	{	return (m_hSocket)&&(m_hSocket != INVALID_SOCKET);	}
 	bool Close();
 	bool Create();
 	bool Connect(const char *pHost, unsigned short usPort);
@@ -133,12 +132,14 @@ public:
 	int  Send(const char* pBuff, const int iSize);
 	//all data will be sent guaranteed.
 	int  SendAll(const char* pBuff, const int iSize);
+	int  PeekReceive();			//	return number of bytes waiting
 	int  Receive(char* pBuff, const int iSize);
 	void SetTimeoutSend(int timeoutInSeconds);
 	void SetTimeoutReceive(int timeoutInSeconds);
 	int  GetTimeoutSend();
 	int  GetTimeoutReceive();
-	bool GetRemoteAddr(char* address);							//returns the IP of last received packet
+	bool GetRemoteAddr(string& address,int& port) const;	//	gets the IP and port of last received packet
+	bool GetListenAddr(string& address,int& port) const;	//	get our bound IP and port
 	bool SetReceiveBufferSize(int sizeInByte);
 	bool SetSendBufferSize(int sizeInByte);
 	int  GetReceiveBufferSize();
@@ -152,14 +153,14 @@ public:
 	bool SetTTL(int nTTL);
 
 protected:
-	int m_iListenPort;
-
 	#ifdef TARGET_WIN32
 		SOCKET m_hSocket;
 	#else
 		int m_hSocket;
 	#endif
 
+	int WaitReceive(time_t timeoutSeconds, time_t timeoutMillis);
+	int WaitSend(time_t timeoutSeconds, time_t timeoutMillis);
 
 	unsigned long m_dwTimeoutReceive;
 	unsigned long m_dwTimeoutSend;
@@ -171,6 +172,5 @@ protected:
 
 	static bool m_bWinsockInit;
 	bool canGetRemoteAddress;
-};
 
-#endif // ___ofxUDPManager__H__
+};

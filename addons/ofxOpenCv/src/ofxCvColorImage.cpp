@@ -1,11 +1,7 @@
-
-
 #include "ofxCvGrayscaleImage.h"
 #include "ofxCvColorImage.h"
 #include "ofxCvFloatImage.h"
 #include "ofxCvShortImage.h"
-
-
 
 
 //--------------------------------------------------------------------------------
@@ -22,16 +18,25 @@ ofxCvColorImage::ofxCvColorImage( const ofxCvColorImage& _mom ) {
         allocate( (int)mom.getWidth(), (int)mom.getHeight() );
         cvCopy( mom.getCvImage(), cvImage, 0 );
     } else {
-        ofLog(OF_LOG_NOTICE, "in ofxCvColorImage copy constructor, mom not allocated");
+        ofLogWarning("ofxCvColorImage") << "copy constructor: source image not allocated";
     }
+}
+
+
+//--------------------------------------------------------------------------------
+void ofxCvColorImage::allocateTexture(){
+	tex.allocate(pixels);
+}
+
+//--------------------------------------------------------------------------------
+void ofxCvColorImage::allocatePixels(int w, int h){
+	pixels.allocate(w,h,OF_PIXELS_RGB);
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::init() {
     ipldepth = IPL_DEPTH_8U;
     iplchannels = 3;
-    gldepth = GL_UNSIGNED_BYTE;
-    glchannels = GL_RGB;
     cvGrayscaleImage = NULL;
 }
 
@@ -50,18 +55,30 @@ void ofxCvColorImage::clear() {
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::set( float value ){
+	if( !bAllocated ){
+        ofLogError("ofxCvColorImage") << "set(): image not allocated";
+		return;
+    }
     cvSet(cvImage, cvScalar(value, value, value));
     flagImageChanged();
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::set(int valueR, int valueG, int valueB){
+	if( !bAllocated ){
+        ofLogError("ofxCvColorImage") << "set(): image not allocated";
+		return;		
+    }
     cvSet(cvImage, cvScalar(valueR, valueG, valueB));
     flagImageChanged();
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::operator -= ( float value ) {
+	if( !bAllocated ){
+        ofLogError("ofxCvColorImage") << "set(): image not allocated";
+		return;		
+    }
 	cvSubS( cvImage, cvScalar(value, value, value), cvImageTemp );
 	swapTemp();
     flagImageChanged();
@@ -69,51 +86,71 @@ void ofxCvColorImage::operator -= ( float value ) {
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::operator += ( float value ) {
+	if( !bAllocated ){
+        ofLogError("ofxCvColorImage") << "set(): image not allocated";
+		return;		
+    }
 	cvAddS( cvImage, cvScalar(value, value, value), cvImageTemp );
 	swapTemp();
     flagImageChanged();
 }
 
 //--------------------------------------------------------------------------------
-void ofxCvColorImage::setFromPixels( unsigned char* _pixels, int w, int h ) {
+void ofxCvColorImage::setFromPixels( const unsigned char* _pixels, int w, int h ) {
     // copy pixels ignoring any ROI
+	if( w == 0 || h == 0 ){
+		ofLogError("ofxCvColorImage") << "setFromPixels(): width and height are zero";
+		return;
+	}
 
-    if( w == width && h == height ) {
-	
-		if( cvImage->width == cvImage->widthStep ){
-			memcpy( cvImage->imageData,  _pixels, w*h*3);
+    if( !bAllocated || w != width || h != height ) {
+		if ( !bAllocated ){
+			ofLogNotice("ofxCvColorImage") << "setFromPixels(): allocating to match dimensions: "
+				<< width << " " << height;
 		}else{
-			
- 		 	for( int i=0; i < height; i++ ) {
-            		memcpy( cvImage->imageData + (i*cvImage->widthStep),
- 	                   _pixels + (i*w*3),
-        	            width*3 );
-        		}
-			
+			ofLogNotice("ofxCvColorImage") << "setFromPixels(): reallocating to match dimensions: "
+				<< width << " " << height;
 		}
-		
-        flagImageChanged();
-    } else {
-        ofLog(OF_LOG_ERROR, "in setFromPixels, size mismatch");
-    }
+		allocate(w,h);
+	}
+	
+	if( cvImage->width*cvImage->nChannels == cvImage->widthStep ){
+		memcpy( cvImage->imageData,  _pixels, w*h*iplchannels);
+	}else{		
+		for( int i=0; i < height; i++ ) {
+			memcpy( cvImage->imageData + (i*cvImage->widthStep), _pixels + (i*w*iplchannels),width*iplchannels );
+		}
+	}
+	
+	flagImageChanged();
 }
 
 //--------------------------------------------------------------------------------
-void ofxCvColorImage::setRoiFromPixels( unsigned char* _pixels, int w, int h ) {
-    ofRectangle roi = getROI();
+void ofxCvColorImage::setRoiFromPixels( const unsigned char* _pixels, int w, int h ) {
+   	if( w == 0 || h == 0 ){
+		ofLogError("ofxCvColorImage") << "setRoiFromPixels(): width and height are zero";
+		return;
+	}
+   	if(!bAllocated){
+		ofLogError("ofxCvColorImage") << "setRoiFromPixels(): image not allocated";
+		return;
+	}
+		 
+	ofRectangle roi = getROI();
     ofRectangle inputROI = ofRectangle( roi.x, roi.y, w, h);
     ofRectangle iRoi = getIntersectionROI( roi, inputROI );
 
     if( iRoi.width > 0 && iRoi.height > 0 ) {
         // copy pixels from _pixels, however many we have or will fit in cvImage
         for( int i=0; i < iRoi.height; i++ ) {
-            memcpy( cvImage->imageData + ((i+(int)iRoi.y)*cvImage->widthStep) + (int)iRoi.x*3,
-                    _pixels + (i*w*3),
-                    (int)(iRoi.width*3) );
+            memcpy( cvImage->imageData + ((i+(int)iRoi.y)*cvImage->widthStep) + (int)iRoi.x*iplchannels,
+                    _pixels + (i*w*iplchannels),
+                    (int)(iRoi.width*iplchannels) );
         }
         flagImageChanged();
     } else {
-        ofLog(OF_LOG_ERROR, "in setRoiFromPixels, ROI mismatch");
+        ofLogError("ofxCvColorImage") << "setRoiFromPixels(): region of interest width and/or height are zero: "
+			<< iRoi.width << " " << iRoi.height;
     }
 }
 
@@ -123,48 +160,78 @@ void ofxCvColorImage::setFromGrayscalePlanarImages( ofxCvGrayscaleImage& red, of
     ofRectangle redRoi = red.getROI();
     ofRectangle greenRoi = green.getROI();
     ofRectangle blueRoi = blue.getROI();
+	
+	if( !bAllocated ){
+		ofLogNotice("ofxCvColorImage") << "setFromGrayscalePlanarImages(): allocating to match dimensions";		
+		allocate(red.getWidth(), red.getHeight());
+	}
+	
     if( redRoi.width == roi.width && redRoi.height == roi.height &&
         greenRoi.width == roi.width && greenRoi.height == roi.height &&
         blueRoi.width == roi.width && blueRoi.height == roi.height )
     {
-         cvCvtPlaneToPix(red.getCvImage(), green.getCvImage(), blue.getCvImage(),NULL, cvImage);
+         cvMerge(red.getCvImage(), green.getCvImage(), blue.getCvImage(),NULL, cvImage);
          flagImageChanged();
 	} else {
-        ofLog(OF_LOG_ERROR, "in setFromGrayscalePlanarImages, ROI/size mismatch");
+        ofLogError("ofxCvColorImage") << "setFromGrayscalePlanarImages(): image size or region of interest mismatch";
 	}
 }
 
 
 //--------------------------------------------------------------------------------
-void ofxCvColorImage::operator = ( unsigned char* _pixels ) {
-    setFromPixels( _pixels, width, height );
+void ofxCvColorImage::operator = ( const ofPixels & _pixels ) {
+    setFromPixels( _pixels );
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::operator = ( const ofxCvGrayscaleImage& _mom ) {
     // cast non-const,  no worries, we will reverse any chages
     ofxCvGrayscaleImage& mom = const_cast<ofxCvGrayscaleImage&>(_mom);
+	
+	if( mom.getWidth() == 0 || mom.getHeight() == 0 ){
+		ofLogError("ofxCvColorImage") << "operator=: source width and/or height are zero: "
+			<< mom.getWidth() << " " << mom.getHeight();
+		return;	
+	}
+	if( !bAllocated ){
+		ofLogNotice("ofxCvColorImage") << "operator=: allocating to match dimensions: "
+			<< mom.getWidth() << " " << mom.getHeight();
+		allocate(mom.getWidth(), mom.getHeight());
+	}
+		
 	if( matchingROI(getROI(), mom.getROI()) ) {
 		cvCvtColor( mom.getCvImage(), cvImage, CV_GRAY2RGB );
         flagImageChanged();
 	} else {
-        ofLog(OF_LOG_ERROR, "in =, ROI mismatch");
+        ofLogError("ofxCvColorImage") << "operator=: region of interest mismatch";
 	}
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::operator = ( const ofxCvColorImage& _mom ) {
     if(this != &_mom) {  //check for self-assignment
-        // cast non-const,  no worries, we will reverse any chages
+        // cast non-const,  no worries, we will reverse any changes
         ofxCvColorImage& mom = const_cast<ofxCvColorImage&>(_mom);
-        if( matchingROI(getROI(), mom.getROI()) ) {
+        
+		if( mom.getWidth() == 0 || mom.getHeight() == 0 ){
+			ofLogError("ofxCvColorImage") << "operator=: source width and/or height are zero:"
+				<< mom.getWidth() << " " << mom.getHeight();
+			return;	
+		}
+		if( !bAllocated ){
+			ofLogNotice("ofxCvColorImage") << "operator=: allocating to match dimensions: "
+				<< mom.getWidth() << " " << mom.getHeight();		
+			allocate(mom.getWidth(), mom.getHeight());
+		}		
+					
+		if( matchingROI(getROI(), mom.getROI()) ) {
             cvCopy( mom.getCvImage(), cvImage, 0 );
             flagImageChanged();
         } else {
-            ofLog(OF_LOG_ERROR, "in =, ROI mismatch");
+            ofLogError("ofxCvColorImage") << "operator=: region of interest mismatch";
         }
     } else {
-        ofLog(OF_LOG_WARNING, "in =, you are assigning a ofxCvColorImage to itself");
+        ofLogWarning("ofxCvColorImage") << "operator=: assigning image to itself, not copying";
     }
 }
 
@@ -172,6 +239,18 @@ void ofxCvColorImage::operator = ( const ofxCvColorImage& _mom ) {
 void ofxCvColorImage::operator = ( const ofxCvFloatImage& _mom ) {
     // cast non-const,  no worries, we will reverse any chages
     ofxCvFloatImage& mom = const_cast<ofxCvFloatImage&>(_mom);
+	
+	if( mom.getWidth() == 0 || mom.getHeight() == 0 ){
+		ofLogError("ofxCvColorImage") << "operator=: source width and/or height are zero:"
+			<< mom.getWidth() << " " << mom.getHeight();	
+		return;	
+	}
+	if( !bAllocated ){
+		ofLogNotice("ofxCvColorImage") << "operator=: allocating to match dimensions: "
+			<< mom.getWidth() << " " << mom.getHeight();	
+		allocate(mom.getWidth(), mom.getHeight());
+	}	
+	
 	if( matchingROI(getROI(), mom.getROI()) ) {
         if( cvGrayscaleImage == NULL ) {
             cvGrayscaleImage = cvCreateImage( cvSize(width,height), IPL_DEPTH_8U, 1 );
@@ -183,7 +262,7 @@ void ofxCvColorImage::operator = ( const ofxCvFloatImage& _mom ) {
 		cvCvtColor( cvGrayscaleImage, cvImage, CV_GRAY2RGB );
         flagImageChanged();
 	} else {
-        ofLog(OF_LOG_ERROR, "in =, ROI mismatch");
+        ofLogError("ofxCvColorImage") << "operator=: region of interest mismatch";
 	}
 }
 
@@ -191,6 +270,18 @@ void ofxCvColorImage::operator = ( const ofxCvFloatImage& _mom ) {
 void ofxCvColorImage::operator = ( const ofxCvShortImage& _mom ) {
     // cast non-const,  no worries, we will reverse any chages
     ofxCvShortImage& mom = const_cast<ofxCvShortImage&>(_mom);
+	
+	if( mom.getWidth() == 0 || mom.getHeight() == 0 ){
+		ofLogError("ofxCvColorImage") << "operator=: source width and/or height are zero:"
+			<< mom.getWidth() << " " << mom.getHeight();
+		return;	
+	}
+	if( !bAllocated ){
+		ofLogNotice("ofxCvColorImage") << "operator=: allocating to match dimensions: "
+			<< mom.getWidth() << " " << mom.getHeight();		
+		allocate(mom.getWidth(), mom.getHeight());
+	}	
+	
     if( matchingROI(getROI(), mom.getROI()) ) {
         if( cvGrayscaleImage == NULL ) {
             cvGrayscaleImage = cvCreateImage( cvSize(width,height), IPL_DEPTH_8U, 1 );
@@ -201,7 +292,7 @@ void ofxCvColorImage::operator = ( const ofxCvShortImage& _mom ) {
 		cvCvtColor( cvGrayscaleImage, cvImage, CV_GRAY2RGB );
         flagImageChanged();
     } else {
-        ofLog(OF_LOG_ERROR, "in =, ROI mismatch");
+        ofLogError("ofxCvColorImage") << "operator=: region of interest mismatch";
     }
 }
 
@@ -213,87 +304,79 @@ void ofxCvColorImage::operator = ( const IplImage* _mom ) {
 
 // Get Pixel Data
 
-//--------------------------------------------------------------------------------
-unsigned char* ofxCvColorImage::getPixels() {
-	//Note this possible introduces a bug where pixels doesn't contain the current image.
-	//Also it means that modifying the pointer return by get pixels - affects the internal cvImage
-	//Where as with the slower way below modifying the pointer doesn't change the image. 
-	if(  cvImage->width == cvImage->widthStep ){
-		return (unsigned char *)cvImage->imageData;
-	}
-
-    if(bPixelsDirty) {
-        if(pixels == NULL) {
-            // we need pixels, allocate it
-            pixels = new unsigned char[width*height*3];
-            pixelsWidth = width;
-            pixelsHeight = height;
-        } else if(pixelsWidth != width || pixelsHeight != height) {
-            // ROI changed, reallocate pixels for new size
-            // this is needed because getRoiPixels() might change size of pixels
-            delete pixels;
-            pixels = new unsigned char[width*height*3];
-            pixelsWidth = width;
-            pixelsHeight = height;
-        }
-
-        // copy from ROI to pixels
-        for( int i = 0; i < height; i++ ) {
-            memcpy( pixels + (i*width*3),
-                    cvImage->imageData + (i*cvImage->widthStep),
-                    width*3 );
-        }
-        bPixelsDirty = false;
-    }
-	return pixels;
-}
-
-//--------------------------------------------------------------------------------
-unsigned char* ofxCvColorImage::getRoiPixels() {
-    if(bPixelsDirty) {
-        ofRectangle roi = getROI();
-        if(pixels == NULL) {
-            // we need pixels, allocate it
-            pixels = new unsigned char[(int)(roi.width*roi.height*3)];
-            pixelsWidth = (int)roi.width;
-            pixelsHeight = (int)roi.height;
-        } else if(pixelsWidth != roi.width || pixelsHeight != roi.height) {
-            // ROI changed, reallocate pixels for new size
-            delete pixels;
-            pixels = new unsigned char[(int)(roi.width*roi.height*3)];
-            pixelsWidth = (int)roi.width;
-            pixelsHeight = (int)roi.height;
-        }
-
-        // copy from ROI to pixels
-        for( int i = 0; i < roi.height; i++ ) {
-            memcpy( pixels + (int)(i*roi.width*3),
-                    cvImage->imageData + ((int)(i+roi.y)*cvImage->widthStep) + (int)roi.x*3,
-                    (int)(roi.width * 3) );
-        }
-        bPixelsDirty = false;
-    }
-	return pixels;
-}
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::convertToGrayscalePlanarImages(ofxCvGrayscaleImage& red, ofxCvGrayscaleImage& green, ofxCvGrayscaleImage& blue){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "convertToGrayscalePlanarImages(): image not allocated";	
+		return;	
+	}
+	
     ofRectangle roi = getROI();
     ofRectangle redRoi = red.getROI();
     ofRectangle greenRoi = green.getROI();
     ofRectangle blueRoi = blue.getROI();
+	
+	if( !red.bAllocated ){
+		red.allocate(width, height);
+	} 
+	if( !green.bAllocated ){
+		green.allocate(width, height);
+	} 
+	if( !blue.bAllocated ){
+		blue.allocate(width, height);
+	} 
+			
 	if( redRoi.width == roi.width && redRoi.height == roi.height &&
         greenRoi.width == roi.width && greenRoi.height == roi.height &&
         blueRoi.width == roi.width && blueRoi.height == roi.height )
     {
-        cvCvtPixToPlane(cvImage, red.getCvImage(), green.getCvImage(), blue.getCvImage(), NULL);
+        cvSplit(cvImage, red.getCvImage(), green.getCvImage(), blue.getCvImage(), NULL);
         red.flagImageChanged();
         green.flagImageChanged();
         blue.flagImageChanged();
 	} else {
-        ofLog(OF_LOG_ERROR, "in convertToGrayscalePlanarImages, ROI/size mismatch");
+        ofLogError("ofxCvColorImage") << "convertToGrayscalePlanarImages(): image size or region of interest mismatch";
 	}
 }
+
+//--------------------------------------------------------------------------------
+void ofxCvColorImage::convertToGrayscalePlanarImage (ofxCvGrayscaleImage& grayImage, int whichPlane){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "convertToGrayscalePlanarImage(): image not allocated";	
+		return;	
+	}
+	
+	if( !grayImage.bAllocated ){
+		grayImage.allocate(width, height);
+	} 
+		
+	ofRectangle roi = getROI();
+    ofRectangle grayRoi = grayImage.getROI();
+   
+	if( grayRoi.width == roi.width && grayRoi.height == roi.height ){
+
+		switch (whichPlane){
+				
+			case 0:
+				cvSplit(cvImage, grayImage.getCvImage(), NULL, NULL, NULL);
+				grayImage.flagImageChanged();
+				break;
+			case 1:
+				cvSplit(cvImage, NULL, grayImage.getCvImage(), NULL, NULL);
+				grayImage.flagImageChanged();
+				break;
+			case 2:
+				cvSplit(cvImage, NULL, NULL, grayImage.getCvImage(), NULL);
+				grayImage.flagImageChanged();
+				break;
+		}
+			
+	} else {
+		ofLogError("ofxCvColorImage") << "convertToGrayscalePlanarImages(): image size or region of interest mismatch";
+	}
+}
+
 
 
 
@@ -305,11 +388,15 @@ void ofxCvColorImage::convertToGrayscalePlanarImages(ofxCvGrayscaleImage& red, o
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::contrastStretch() {
-	ofLog(OF_LOG_WARNING, "in contrastStratch, not implemented for ofxCvColorImage");
+	ofLogWarning("ofxCvColorImage") << "contrastStretch(): not implemented";
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::convertToRange(float min, float max ){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "convertToRange(): image not allocated";	
+		return;	
+	}
     rangeMap( cvImage, 0,255, min,max);
     flagImageChanged();
 }
@@ -320,11 +407,14 @@ void ofxCvColorImage::convertToRange(float min, float max ){
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::resize( int w, int h ) {
-
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "resize(): image not allocated";	
+		return;	
+	}
     // note, one image copy operation could be ommitted by
     // reusing the temporal image storage
 
-    IplImage* temp = cvCreateImage( cvSize(w,h), IPL_DEPTH_8U, 3 );
+    IplImage* temp = cvCreateImage( cvSize(w,h), IPL_DEPTH_8U, iplchannels );
     cvResize( cvImage, temp );
     clear();
     allocate( w, h );
@@ -334,6 +424,15 @@ void ofxCvColorImage::resize( int w, int h ) {
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::scaleIntoMe( ofxCvImage& mom, int interpolationMethod ){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "resize(): image not allocated";	
+		return;	
+	}
+	if( !mom.bAllocated ){
+		ofLogError("ofxCvColorImage") << "resize(): source image not allocated";	
+		return;	
+	}
+		
     //for interpolation you can pass in:
     //CV_INTER_NN - nearest-neigbor interpolation,
     //CV_INTER_LINEAR - bilinear interpolation (used by default)
@@ -349,19 +448,23 @@ void ofxCvColorImage::scaleIntoMe( ofxCvImage& mom, int interpolationMethod ){
             (interpolationMethod != CV_INTER_LINEAR) &&
             (interpolationMethod != CV_INTER_AREA) &&
             (interpolationMethod != CV_INTER_CUBIC) ){
-            ofLog(OF_LOG_WARNING, "in scaleIntoMe, setting interpolationMethod to CV_INTER_NN");
+            ofLogWarning("ofxCvColorImage") << "scaleIntoMe(): setting interpolationMethod to CV_INTER_NN";
     		interpolationMethod = CV_INTER_NN;
     	}
         cvResize( mom.getCvImage(), cvImage, interpolationMethod );
         flagImageChanged();
 
     } else {
-        ofLog(OF_LOG_ERROR, "in scaleIntoMe, mom image type has to match");
+        ofLogError("ofxCvColorImage") << "scaleIntoMe(): type mismatch with source image";
     }
 }
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::convertRgbToHsv(){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "convertRgbToHsv(): image not allocated";	
+		return;	
+	}
     cvCvtColor( cvImage, cvImageTemp, CV_RGB2HSV);
     swapTemp();
     flagImageChanged();
@@ -369,6 +472,10 @@ void ofxCvColorImage::convertRgbToHsv(){
 
 //--------------------------------------------------------------------------------
 void ofxCvColorImage::convertHsvToRgb(){
+	if( !bAllocated ){
+		ofLogError("ofxCvColorImage") << "convertHsvToRgb(): image not allocated";
+		return;	
+	}
     cvCvtColor( cvImage, cvImageTemp, CV_HSV2RGB);
     swapTemp();
     flagImageChanged();

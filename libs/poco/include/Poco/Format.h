@@ -1,7 +1,7 @@
 //
 // Format.h
 //
-// $Id: //poco/1.3/Foundation/include/Poco/Format.h#5 $
+// $Id: //poco/1.4/Foundation/include/Poco/Format.h#2 $
 //
 // Library: Foundation
 // Package: Core
@@ -10,42 +10,9 @@
 // Definition of the format freestanding function.
 //
 // Copyright (c) 2006, Applied Informatics Software Engineering GmbH.
-// All rights reserved.
+// and Contributors.
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. Redistributions in any form must be accompanied by information on
-//    how to obtain complete source code for this software and any
-//    accompanying software that uses this software.  The source code
-//    must either be included in the distribution or be available for no
-//    more than the cost of distribution plus a nominal fee, and must be
-//    freely redistributable under reasonable conditions.  For an
-//    executable file, complete source code means the source code for all
-//    modules it contains.  It does not include source code for modules or
-//    files that typically accompany the major components of the operating
-//    system on which the executable file runs.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-// COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+// SPDX-License-Identifier:	BSL-1.0
 //
 
 
@@ -75,10 +42,13 @@ std::string Foundation_API format(const std::string& fmt, const Any& value);
 	/// are copied verbatim to the result. A percent sign (%) marks the beginning
 	/// of a format specification. Format specifications have the following syntax:
 	///
-	///   %[<flags>][<width>][.<precision>][<modifier>]<type>
+	///   %[<index>][<flags>][<width>][.<precision>][<modifier>]<type>
 	///
-	/// Flags, width, precision and prefix are optional. The only required part of
+	/// Index, flags, width, precision and prefix are optional. The only required part of
 	/// the format specification, apart from the percent sign, is the type.
+	///
+	/// The optional index argument has the format "[<n>]" and allows to
+	/// address an argument by its zero-based position (see the example below).
 	///
 	/// Following are valid type specifications and their meaning:
 	///
@@ -99,7 +69,7 @@ std::string Foundation_API format(const std::string& fmt, const Any& value);
 	/// The following flags are supported:
 	///
 	///   * - left align the result within the given field width
-	///   * + prefix the output value with a sign (+ or –) if the output value is of a signed type
+	///   * + prefix the output value with a sign (+ or -) if the output value is of a signed type
 	///   * 0 if width is prefixed with 0, zeros are added until the minimum width is reached
 	///   * # For o, x, X, the # flag prefixes any nonzero output value with 0, 0x, or 0X, respectively; 
 	///     for e, E, f, the # flag forces the output value to contain a decimal point in all cases.
@@ -119,21 +89,30 @@ std::string Foundation_API format(const std::string& fmt, const Any& value);
 	/// Precision is a nonnegative decimal integer, preceded by a period (.), which specifies the number of characters 
 	/// to be printed, the number of decimal places, or the number of significant digits.
 	///
-	/// Throws a BadCastException if an argument does not correspond to the type of its format specification.
+	/// Throws an InvalidArgumentException if an argument index is out of range.
+	///
+	/// Starting with release 1.4.3, an argument that does not match the format
+	/// specifier no longer results in a BadCastException. The string [ERRFMT] is 
+	/// written to the result string instead.
 	/// 
 	/// If there are more format specifiers than values, the format specifiers without a corresponding value
 	/// are copied verbatim to output.
 	///
 	/// If there are more values than format specifiers, the superfluous values are ignored.
 	///
-	/// Usage Example:
-	///     std::string s = format("The answer to life, the universe, and everything is %d", 42);
+	/// Usage Examples:
+	///     std::string s1 = format("The answer to life, the universe, and everything is %d", 42);
+	///     std::string s2 = format("second: %[1]d, first: %[0]d", 1, 2);
 
 std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2);
 std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3);
 std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4);
 std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5);
 std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6);
+std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7);
+std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8);
+std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8, const Any& value9);
+std::string Foundation_API format(const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8, const Any& value9, const Any& value10);
 
 
 void Foundation_API format(std::string& result, const std::string& fmt, const Any& value);
@@ -144,6 +123,10 @@ void Foundation_API format(std::string& result, const std::string& fmt, const An
 void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4);
 void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5);
 void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6);
+void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7);
+void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8);
+void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8, const Any& value9);
+void Foundation_API format(std::string& result, const std::string& fmt, const Any& value1, const Any& value2, const Any& value3, const Any& value4, const Any& value5, const Any& value6, const Any& value7, const Any& value8, const Any& value9, const Any& value10);
 
 
 void Foundation_API format(std::string& result, const std::string& fmt, const std::vector<Any>& values);

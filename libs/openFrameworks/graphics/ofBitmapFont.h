@@ -1,8 +1,11 @@
-#ifndef OF_BMP_TYPE
-#define OF_BMP_TYPE
+#pragma once
 
 #include "ofConstants.h"
-
+#include "ofRectangle.h"
+#include "ofPixels.h"
+#include "ofTexture.h"
+class ofMesh;
+class ofRectangle;
 
 /*
  
@@ -13,9 +16,16 @@
  
  */
 
-void  ofDrawBitmapCharacter(int character );
-
-#endif
-
-
-
+class ofBitmapFont{
+public:
+	ofBitmapFont();
+	~ofBitmapFont();
+	ofMesh getMesh(const string & text, int x, int y, ofDrawBitmapMode mode=OF_BITMAPMODE_MODEL_BILLBOARD, bool vFlipped=true) const;
+	const ofTexture & getTexture() const;
+	ofRectangle getBoundingBox(const string & text, int x, int y) const;
+private:
+	static void init();
+	static ofPixels pixels;
+	void unloadTexture();
+	mutable ofTexture texture;
+};

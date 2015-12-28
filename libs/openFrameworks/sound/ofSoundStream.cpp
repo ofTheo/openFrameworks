@@ -1,155 +1,255 @@
 #include "ofSoundStream.h"
-#include "RtAudio.h"
+#include "ofAppRunner.h"
 
-//----------------------------------- static variables:
-static ofBaseApp 	* 		OFSAptr;
-RtAudio				*		audio;
-int 						nInputChannels;
-int 						nOutputChannels;
-ofAudioEventArgs 			audioEventArgs;
-int 	receiveAudioBufferAndCallSimpleApp(char *buffer, int bufferSize, void *data);
+#if defined(OF_SOUND_PLAYER_FMOD)
+#include "ofSoundPlayer.h"
+#endif
 
+namespace{
+    ofSoundStream systemSoundStream;
+}
 
-
-
-
-//------------------------------------------------------------------------------
-int receiveAudioBufferAndCallSimpleApp(char *buffer, int bufferSize, void *data){
-	// 	rtAudio uses a system by which the audio
-	// 	can be of different formats
-	// 	char, float, etc.
-	// 	we choose float
-
-	float * fPtr = (float *)buffer;
-
-	// [zach] memset output to zero before output call
-	// this is because of how rtAudio works: duplex w/ one callback
-	// you need to cut in the middle. if the simpleApp
-	// doesn't produce audio, we pass silence instead of duplex...
-
-	if (nInputChannels > 0){
-		if(OFSAptr)
-			OFSAptr->audioReceived(fPtr, bufferSize, nInputChannels);
-
-		#ifdef OF_USING_POCO
-			audioEventArgs.buffer = fPtr;
-			audioEventArgs.bufferSize = bufferSize;
-			audioEventArgs.nChannels = nInputChannels;
-			ofNotifyEvent( ofEvents.audioReceived, audioEventArgs );
-		#endif
-
-		memset(fPtr, 0, bufferSize * nInputChannels * sizeof(float));
+//------------------------------------------------------------
+void ofSoundStreamSetup(int nOutputChannels, int nInputChannels, ofBaseApp * appPtr){
+	if( appPtr == nullptr ){
+		appPtr = ofGetAppPtr();
 	}
-	if (nOutputChannels > 0){
-		if(OFSAptr)
-			OFSAptr->audioRequested(fPtr, bufferSize, nOutputChannels);
+	ofSoundStreamSetup(nOutputChannels, nInputChannels, appPtr, 44100, 256, 4);
+}
 
-		#ifdef OF_USING_POCO
-			audioEventArgs.buffer = fPtr;
-			audioEventArgs.bufferSize = bufferSize;
-			audioEventArgs.nChannels = nOutputChannels;
-			ofNotifyEvent( ofEvents.audioRequested, audioEventArgs );
-		#endif
+//------------------------------------------------------------
+void ofSoundStreamSetup(int nOutputChannels, int nInputChannels, int sampleRate, int bufferSize, int nBuffers){
+	ofSoundStreamSetup(nOutputChannels, nInputChannels, ofGetAppPtr(), sampleRate, bufferSize, nBuffers);
+}
 
-    }
+//------------------------------------------------------------
+void ofSoundStreamSetup(int nOutputChannels, int nInputChannels, ofBaseApp * appPtr, int sampleRate, int bufferSize, int nBuffers){
+    systemSoundStream.setup(appPtr, nOutputChannels, nInputChannels, sampleRate, bufferSize, nBuffers);
+}
 
+//------------------------------------------------------------
+void ofSoundStreamStop(){
+    systemSoundStream.stop();
+}
+
+//------------------------------------------------------------
+void ofSoundStreamStart(){
+    systemSoundStream.start();
+}
+
+//------------------------------------------------------------
+void ofSoundStreamClose(){
+    systemSoundStream.close();
+}
+
+//------------------------------------------------------------
+vector<ofSoundDevice> ofSoundStreamListDevices(){
+	vector<ofSoundDevice> deviceList = systemSoundStream.getDeviceList();
+	ofLogNotice("ofSoundStreamListDevices") << std::endl << deviceList;
+	return deviceList;
+}
+
+//------------------------------------------------------------
+ofSoundStream::ofSoundStream(){
+	#ifdef OF_SOUND_STREAM_TYPE
+		setSoundStream( shared_ptr<OF_SOUND_STREAM_TYPE>(new OF_SOUND_STREAM_TYPE) );
+	#endif
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setSoundStream(shared_ptr<ofBaseSoundStream> soundStreamPtr){
+	soundStream = soundStreamPtr;
+}
+
+//------------------------------------------------------------
+shared_ptr<ofBaseSoundStream> ofSoundStream::getSoundStream(){
+	return soundStream;
+}
+
+//------------------------------------------------------------
+vector<ofSoundDevice> ofSoundStream::getDeviceList() const{
+	if( soundStream ){
+		return soundStream->getDeviceList();
+	} else {
+		return vector<ofSoundDevice>();
+	}
+}
+
+//------------------------------------------------------------
+vector<ofSoundDevice> ofSoundStream::listDevices() const{
+	vector<ofSoundDevice> deviceList = getDeviceList();
+	ofLogNotice("ofSoundStream::listDevices") << std::endl << deviceList;
+	return deviceList;
+}
+
+//------------------------------------------------------------
+void ofSoundStream::printDeviceList()  const{
+	if( soundStream ) {
+		soundStream->printDeviceList();
+	}
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setDeviceID(int deviceID){
+	if( soundStream ){
+		soundStream->setDeviceID(deviceID);
+	}	
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setDevice(const ofSoundDevice &device) {
+	setDeviceID(device.deviceID);
+}
+
+//------------------------------------------------------------
+bool ofSoundStream::setup(ofBaseApp * app, int outChannels, int inChannels, int sampleRate, int bufferSize, int nBuffers){
+	if( soundStream ){
+#if defined(OF_SOUND_PLAYER_FMOD)
+		ofFmodSetBuffersize(bufferSize);
+#endif
+		return soundStream->setup(app, outChannels, inChannels, sampleRate, bufferSize, nBuffers);
+	}
+	return false;
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setInput(ofBaseSoundInput * soundInput){
+	if( soundStream ){
+		soundStream->setInput(soundInput);
+	}
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setInput(ofBaseSoundInput &soundInput){
+	setInput(&soundInput);
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setOutput(ofBaseSoundOutput * soundOutput){
+	if( soundStream ){
+		soundStream->setOutput(soundOutput);
+	}
+}
+
+//------------------------------------------------------------
+void ofSoundStream::setOutput(ofBaseSoundOutput &soundOutput){
+	setOutput(&soundOutput);
+}
+
+//------------------------------------------------------------
+bool ofSoundStream::setup(int outChannels, int inChannels, int sampleRate, int bufferSize, int nBuffers){
+	if( soundStream ){
+#if defined(OF_SOUND_PLAYER_FMOD)
+		ofFmodSetBuffersize(bufferSize);
+#endif
+		return soundStream->setup(outChannels, inChannels, sampleRate, bufferSize, nBuffers);
+	}
+	return false;
+}
+
+//------------------------------------------------------------
+void ofSoundStream::start(){
+	if( soundStream ){
+		soundStream->start();
+	}
+}
+
+//------------------------------------------------------------
+void ofSoundStream::stop(){
+	if( soundStream ){
+		soundStream->stop();
+	}
+}
+
+//------------------------------------------------------------
+void ofSoundStream::close(){
+	if( soundStream ){
+		soundStream->close();
+	}
+}
+
+//------------------------------------------------------------
+long unsigned long ofSoundStream::getTickCount() const{
+	if( soundStream ){
+		return soundStream->getTickCount();
+	}
 	return 0;
 }
 
-//---------------------------------------------------------
-void ofSoundStreamSetup(int nOutputs, int nInputs, ofBaseApp * OFSA){
-	ofSoundStreamSetup(nOutputs, nInputs, OFSA, 44100, 256, 4);
-}
-
-//---------------------------------------------------------
-void ofSoundStreamSetup(int nOutputs, int nInputs, int sampleRate, int bufferSize, int nBuffers){
-	ofSoundStreamSetup(nOutputs, nInputs, NULL, sampleRate, bufferSize, nBuffers);
-}
-
-//---------------------------------------------------------
-void ofSoundStreamSetup(int nOutputs, int nInputs, ofBaseApp * OFSA, int sampleRate, int bufferSize, int nBuffers){
-
-	nInputChannels 		=  nInputs;
-	nOutputChannels 	=  nOutputs;
-	int device 			=  0;        // default
-	OFSAptr 			=  OFSA;
-
-	bufferSize = ofNextPow2(bufferSize);	// must be pow2
-
-	try {
-		audio = new RtAudio();
-		audio->openStream(	device, nOutputs, device, nInputs, RTAUDIO_FLOAT32,
-                      		sampleRate, &bufferSize, nBuffers);
-	} catch (RtError &error) {
-		error.printMessage();
-		//std::exit(EXIT_FAILURE); // need case here
+//------------------------------------------------------------
+int ofSoundStream::getNumInputChannels() const{
+	if( soundStream ){
+		return soundStream->getNumInputChannels();
 	}
+	return 0;
+}
 
-	try {
-		audio->setStreamCallback(&receiveAudioBufferAndCallSimpleApp, (void *)NULL);
-		audio->startStream();
-	} catch (RtError &error) {
-		error.printMessage();
+//------------------------------------------------------------
+int ofSoundStream::getNumOutputChannels() const{
+	if( soundStream ){
+		return soundStream->getNumOutputChannels();
 	}
+	return 0;
 }
 
-//---------------------------------------------------------
-void ofSoundStreamStop(){
-	try {
-    	audio->stopStream();
-  	} catch (RtError &error) {
-   		error.printMessage();
- 	}
-}
-
-
-
-//---------------------------------------------------------
-void ofSoundStreamStart(){
-	try{
-		audio->startStream();
-	} catch (RtError &error) {
-		error.printMessage();
+//------------------------------------------------------------
+int ofSoundStream::getSampleRate() const{
+	if( soundStream ){
+		return soundStream->getSampleRate();
 	}
+	return 0;
 }
 
-
-//---------------------------------------------------------
-void ofSoundStreamClose(){
-	try {
-    	audio->stopStream();
-    	audio->closeStream();
-  	} catch (RtError &error) {
-   		error.printMessage();
- 	}
-	delete audio;
-}
-
-
-//---------------------------------------------------------
-void ofSoundStreamListDevices(){
-	RtAudio *audioTemp = 0;
-	try {
-		audioTemp = new RtAudio();
-	} catch (RtError &error) {
-		error.printMessage();
+//------------------------------------------------------------
+int ofSoundStream::getBufferSize() const{
+	if( soundStream ){
+		return soundStream->getBufferSize();
 	}
- 	int devices = audioTemp->getDeviceCount();
-	RtAudioDeviceInfo info;
-	for (int i=1; i<=devices; i++) {
-		try {
-			info = audioTemp->getDeviceInfo(i);
-		} catch (RtError &error) {
-			error.printMessage();
-			break;
+	return 0;
+}
+
+//------------------------------------------------------------
+ofSoundDevice::ofSoundDevice()
+: name("Unknown")
+, deviceID(0)
+, inputChannels(0)
+, outputChannels(0)
+, isDefaultInput(false)
+, isDefaultOutput(false) {
+
+}
+
+//------------------------------------------------------------
+vector<ofSoundDevice> ofSoundStream::getMatchingDevices(const std::string& name, unsigned int inChannels, unsigned int outChannels) const {
+	vector<ofSoundDevice> devs = getDeviceList();
+	vector<ofSoundDevice> hits;
+	
+	for(size_t i = 0; i < devs.size(); i++) {
+		bool nameMatch = devs[i].name.find(name) != string::npos;
+		bool inMatch = (inChannels == UINT_MAX) || (devs[i].inputChannels == inChannels);
+		bool outMatch = (outChannels == UINT_MAX) || (devs[i].outputChannels == outChannels);
+		
+		if(nameMatch && inMatch && outMatch) {
+			hits.push_back(devs[i]);
 		}
-		std::cout << "device = " << i << " (" << info.name << ")\n";
-		if (info.isDefault) std::cout << "----* default ----* \n";
-		std::cout << "maximum output channels = " << info.outputChannels << "\n";
-		std::cout << "maximum input channels = " << info.inputChannels << "\n";
-		std::cout << "-----------------------------------------\n";
-
 	}
-	delete audioTemp;
+	
+	return hits;
 }
 
+//------------------------------------------------------------
+std::ostream& operator << (std::ostream& os, const ofSoundDevice& dev) {
+	os << "[" << dev.deviceID << "] " << dev.name;
+	os << " [in:" << dev.inputChannels << " out:" << dev.outputChannels << "]";
+	if(dev.isDefaultInput) os << " (default in)";
+	if(dev.isDefaultOutput) os << " (default out)";
+	return os;
+}
+
+//------------------------------------------------------------
+std::ostream& operator << (std::ostream& os, const std::vector<ofSoundDevice>& devs) {
+	for(std::size_t i = 0; i < devs.size(); i++) {
+		os << devs[i] << std::endl;
+	}
+	return os;
+}

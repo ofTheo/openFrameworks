@@ -2,40 +2,43 @@
 
 #include "ofConstants.h"
 #include "ofAppBaseWindow.h"
+#include "ofEvents.h"
+#include "ofTypes.h"
+#include "ofPixels.h"
 
-
-#ifdef TARGET_WIN32
-	#define GLUT_BUILDING_LIB
-	#include "glut.h"
-#endif
-#ifdef TARGET_OSX
-	#include <GLUT/glut.h>
-#endif
-#ifdef TARGET_LINUX
-	#include <GL/glut.h>
-#endif
-
-class ofPoint;
+//class ofPoint;
 class ofBaseApp;
+class ofBaseRenderer;
 
-class ofAppGlutWindow : public ofAppBaseWindow {
+class ofAppGlutWindow : public ofAppBaseGLWindow {
 
 public:
 
 	ofAppGlutWindow();
 	~ofAppGlutWindow(){}
 
-	void setupOpenGL(int w, int h, int screenMode);
-	void initializeWindow();
-	void runAppViaInfiniteLoop(ofBaseApp * appPtr);
+	static bool doesLoop(){ return true; }
+	static bool allowsMultiWindow(){ return false; }
+	static void loop();
+	static bool needsPolling(){ return false; }
+	static void pollEvents(){  }
+
+	using ofAppBaseWindow::setup;
+	void setup(const ofGLWindowSettings & settings);
+	void update();
+	void draw();
+	void close();
+	
+	void setDoubleBuffering(bool _bDoubleBuffered); 
+	
+	//note if you fail to set a compatible string the app will not launch
+	void setGlutDisplayString(string str);
 
 	void hideCursor();
 	void showCursor();
 	
 	void setFullscreen(bool fullScreen);
 	void toggleFullscreen();
-	
-	static void exitApp();
 
 	void setWindowTitle(string title);
 	void setWindowPosition(int x, int y);
@@ -44,16 +47,24 @@ public:
 	ofPoint		getWindowPosition();
 	ofPoint		getWindowSize();
 	ofPoint		getScreenSize();
-
-	int			getWindowMode();
-
-	int			getFrameNum();
-	float		getFrameRate();
-	void		setFrameRate(float targetRate);
+	
+	void			setOrientation(ofOrientation orientation);
+	ofOrientation	getOrientation();
+	
+	int			getWidth();
+	int			getHeight();	
+	
+	ofWindowMode	getWindowMode();
 
 	void		enableSetupScreen();
 	void		disableSetupScreen();
 
+	void		setVerticalSync(bool enabled);
+
+	ofCoreEvents & events();
+	shared_ptr<ofBaseRenderer> & renderer();
+
+private:
 	static void display(void);
 	static void mouse_cb(int button, int state, int x, int y);
 	static void motion_cb(int x, int y);
@@ -64,9 +75,19 @@ public:
 	static void special_key_cb(int key, int x, int y) ;
 	static void special_key_up_cb(int key, int x, int y) ;
 	static void resize_cb(int w, int h);
+	static void entry_cb(int state);
+	static void exit_cb();
+	static void dragEvent(char ** fileNames, int howManyFiles, int dragX, int dragY);
+	string displayString;
 
-
+	bool iconSet;
+#ifdef TARGET_LINUX
+	void setWindowIcon(const string & path);
+	void setWindowIcon(const ofPixels & iconPixels);
+#endif
 	
-	 
+	ofCoreEvents coreEvents;
+	shared_ptr<ofBaseRenderer> currentRenderer;
+	int windowId;
 };
 

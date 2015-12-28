@@ -26,10 +26,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-
-#ifndef _ofxOscSENDER_H
-#define _ofxOscSENDER_H
+#pragma once
 
 /**
 
@@ -39,37 +36,56 @@ an ofxOscSender sends messages to a single host/port
 
 */
 
-class UdpTransmitSocket;
+namespace osc{
+	class UdpTransmitSocket;
+}
 #include <string>
 #include "OscTypes.h"
 #include "OscOutboundPacketStream.h"
+#include "UdpSocket.h"
 
 #include "ofxOscBundle.h"
 #include "ofxOscMessage.h"
+#include "ofParameter.h"
+#include "ofParameterGroup.h"
 
 
 class ofxOscSender
 {
 public:
 	ofxOscSender();
-	~ofxOscSender();
+	ofxOscSender(const ofxOscSender & mom);
+	ofxOscSender & operator=(const ofxOscSender & mom);
 
 	/// send messages to hostname and port
-	void setup( std::string hostname, int port );
+	void setup( const std::string &hostname, int port );
 
 	/// send the given message
-	void sendMessage( ofxOscMessage& message );
+	void sendMessage( ofxOscMessage& message, bool wrapInBundle = true );
 	/// send the given bundle
 	void sendBundle( ofxOscBundle& bundle );
+	/// creates a message using an ofParameter
+	void sendParameter( const ofAbstractParameter & parameter);
+
+	/// disables broadcast capabilities, usually call this before setup
+	void disableBroadcast();
+
+	/// enabled broadcast capabilities (usually no need to call this, enabled by default)
+	void enableBroadcast();
 
 private:
+	void setup(osc::UdpTransmitSocket * socket);
 	void shutdown();
 		
 	// helper methods for constructing messages
 	void appendBundle( ofxOscBundle& bundle, osc::OutboundPacketStream& p );
 	void appendMessage( ofxOscMessage& message, osc::OutboundPacketStream& p );
+    void appendParameter( ofxOscBundle & bundle, const ofAbstractParameter & parameter, const std::string &address);
+    void appendParameter( ofxOscMessage & msg, const ofAbstractParameter & parameter, const std::string &address);
 
-	UdpTransmitSocket* socket;
+ 	std::unique_ptr<osc::UdpTransmitSocket> socket;
+ 	bool broadcast;
+ 	std::string hostname;
+ 	int port;
+
 };
-
-#endif
