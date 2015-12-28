@@ -778,10 +778,12 @@ void ofAppGLFWWindow::setFullscreen(bool fullscreen){
 	}
 #elif defined(TARGET_WIN32)
     if( windowMode == OF_FULLSCREEN){
-        int nonFullScreenX = getWindowPosition().x;
-        int nonFullScreenY = getWindowPosition().y;
-		int nonFullScreenW = getWindowSize().x;
-		int nonFullScreenH = getWindowSize().y;
+		// save window shape before going fullscreen
+		ofPoint pos = getWindowPosition();
+		windowRect.x = pos.x;
+		windowRect.y = pos.y;
+		windowRect.width = windowW;
+		windowRect.height = windowH;
  
 		//----------------------------------------------------
 		HWND hwnd = glfwGetWin32Window(windowP);
