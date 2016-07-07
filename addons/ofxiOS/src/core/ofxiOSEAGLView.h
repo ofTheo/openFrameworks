@@ -6,7 +6,7 @@
 //
 
 #pragma once
-
+#include <TargetConditionals.h>
 #import <UIKit/UIKit.h>
 #import "EAGLView.h"
 
@@ -34,6 +34,7 @@ class ofAppiOSWindow;
 - (void)updateDimensions;
 - (void)destroy;
 - (CGPoint)orientateTouchPoint:(CGPoint)touchPoint;
+- (void) resetTouches;
 
 @end
 

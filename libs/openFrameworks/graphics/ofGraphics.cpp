@@ -233,7 +233,6 @@ void ofTranslate(const ofPoint& p){
 	ofGetCurrentRenderer()->translate(p);
 }
 
-
 //----------------------------------------------------------
 void ofTranslate(float x, float y, float z){
 	ofGetCurrentRenderer()->translate(x, y, z);
@@ -244,10 +243,14 @@ void ofScale(float xAmnt, float yAmnt, float zAmnt){
 	ofGetCurrentRenderer()->scale(xAmnt, yAmnt, zAmnt);
 }
 
+void ofScale(float amount){
+  ofScale(amount, amount, amount);
+}
 
 void ofScale(const ofPoint & p) { 
 	ofScale(p.x, p.y, p.z); 
 }
+
 //----------------------------------------------------------
 void ofRotate(float degrees, float vecX, float vecY, float vecZ){
 	ofGetCurrentRenderer()->rotate(degrees, vecX, vecY, vecZ);
@@ -389,7 +392,7 @@ void ofBackground(int r, int g, int b, int a){
 
 //----------------------------------------------------------
 void ofBackgroundGradient(const ofColor& start, const ofColor& end, ofGradientMode mode) {
-	float w = ofGetWidth(), h = ofGetHeight();
+	float w = ofGetViewportWidth(), h = ofGetViewportHeight();
 	gradientMesh.clear();
 	gradientMesh.setMode(OF_PRIMITIVE_TRIANGLE_FAN);
 #ifndef TARGET_EMSCRIPTEN

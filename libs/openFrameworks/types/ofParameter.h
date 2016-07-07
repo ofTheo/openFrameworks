@@ -20,7 +20,7 @@ class ofParameterGroup;
 /// Base class for ofParameter, ofReadOnlyParameter and ofParameterGroup
 class ofAbstractParameter{
 public:
-	virtual ~ofAbstractParameter(){};
+	virtual ~ofAbstractParameter(){}
 	virtual string getName() const = 0;
 	virtual void setName(const string & name) = 0;
 	virtual string toString() const = 0;
@@ -52,12 +52,14 @@ public:
 	virtual bool isReadOnly() const = 0;
 	virtual shared_ptr<ofAbstractParameter> newReference() const = 0;
 
+	virtual bool isReferenceTo(const ofAbstractParameter& other) const;
+
 protected:
 	virtual const ofParameterGroup getFirstParent() const = 0;
 	virtual void setSerializable(bool serializable)=0;
 	virtual string escape(const string& str) const;
+	virtual const void* getInternalObject() const = 0;
 };
-
 
 
 
@@ -84,6 +86,9 @@ public:
 
 	void add(ofAbstractParameter & param);
 
+	void remove(ofAbstractParameter & param);
+	void remove(std::size_t index);
+	void remove(const std::string& name);
 
 	void clear();
 
@@ -210,6 +215,9 @@ public:
 	vector<shared_ptr<ofAbstractParameter> >::const_reverse_iterator rbegin() const;
 	vector<shared_ptr<ofAbstractParameter> >::const_reverse_iterator rend() const;
 
+protected:
+	const void* getInternalObject() const;
+
 private:
 	class Value{
 	public:
@@ -277,6 +285,18 @@ namespace priv{
 		static T max() { return std::numeric_limits<T>::max(); }
 	};
 
+	template<>
+	struct TypeInfo_<float, true> {
+		static float min() { return 0; }
+		static float max() { return 1; }
+	};
+
+	template<>
+	struct TypeInfo_<double, true> {
+		static float min() { return 0; }
+		static float max() { return 1; }
+	};
+
 	// Types without numeric_limits resolve to this template specialization:
 	template<typename T>
 	struct TypeInfo_<T, false> {
@@ -291,26 +311,26 @@ namespace priv{
 	// Here we provide some of our own specializations:
 	template<>
 	struct TypeInfo <ofVec2f> {
-		static ofVec2f min() { return ofVec2f(std::numeric_limits<float>::lowest()); };
-		static ofVec2f max() { return ofVec3f(std::numeric_limits<float>::max()); };
+		static ofVec2f min() { return ofVec2f(0); }
+		static ofVec2f max() { return ofVec2f(1); }
 	};
 
 	template<>
 	struct TypeInfo <ofVec3f> {
-		static ofVec3f min() { return ofVec3f(std::numeric_limits<float>::lowest()); };
-		static ofVec3f max() { return ofVec3f(std::numeric_limits<float>::max()); };
+		static ofVec3f min() { return ofVec3f(0); }
+		static ofVec3f max() { return ofVec3f(1); }
 	};
 
 	template<>
 	struct TypeInfo <ofVec4f> {
-		static ofVec4f min() { return ofVec4f(std::numeric_limits<float>::lowest()); };
-		static ofVec4f max() { return ofVec4f(std::numeric_limits<float>::max()); };
+		static ofVec4f min() { return ofVec4f(0); }
+		static ofVec4f max() { return ofVec4f(1); }
 	};
 
 	template<typename T>
 	struct TypeInfo <ofColor_<T>> {
-		static ofColor_<T> min() { return ofColor_<T>(0,0); };
-		static ofColor_<T> max() { return ofColor_<T>(ofColor_<T>::limit(),ofColor_<T>::limit()); };
+		static ofColor_<T> min() { return ofColor_<T>(0,0); }
+		static ofColor_<T> max() { return ofColor_<T>(ofColor_<T>::limit(),ofColor_<T>::limit()); }
 	};
 
 
@@ -354,7 +374,7 @@ namespace priv{
 	}
 
 	template<typename ParameterType>
-	typename std::enable_if<!of::priv::has_saving_support<ParameterType>::value, std::string>::type toStringImpl(const ParameterType & value){
+	typename std::enable_if<!of::priv::has_saving_support<ParameterType>::value, std::string>::type toStringImpl(const ParameterType &){
 	    throw std::exception();
 	}
 
@@ -364,7 +384,7 @@ namespace priv{
 	}
 
 	template<typename ParameterType>
-	typename std::enable_if<!of::priv::has_loading_support<ParameterType>::value, ParameterType>::type fromStringImpl(const std::string & str){
+	typename std::enable_if<!of::priv::has_loading_support<ParameterType>::value, ParameterType>::type fromStringImpl(const std::string &){
 	    throw std::exception();
 
 	}
@@ -416,6 +436,11 @@ public:
 	template<class ListenerClass, typename ListenerMethod>
 	void removeListener(ListenerClass * listener, ListenerMethod method, int prio=OF_EVENT_ORDER_AFTER_APP){
 		ofRemoveListener(obj->changedE,listener,method,prio);
+	}
+
+	template<typename... Args>
+	ofEventListener newListener(Args...args) {
+		return obj->changedE.newListener(args...);
 	}
 
 	void enableEvents();
@@ -471,15 +496,20 @@ public:
 	void setParent(ofParameterGroup & _parent);
 
 	const ofParameterGroup getFirstParent() const{
-		auto first = std::find_if(obj->parents.begin(),obj->parents.end(),[](weak_ptr<ofParameterGroup::Value> p){return p.lock()!=nullptr;});
-		if(first!=obj->parents.end()){
-			return first->lock();
+		obj->parents.erase(std::remove_if(obj->parents.begin(),obj->parents.end(),
+						   [](weak_ptr<ofParameterGroup::Value> p){return p.lock()==nullptr;}),
+						obj->parents.end());
+		if(!obj->parents.empty()){
+			return obj->parents.front().lock();
 		}else{
 			return shared_ptr<ofParameterGroup::Value>(nullptr);
 		}
 	}
 
 	size_t getNumListeners() const;
+
+protected:
+	const void* getInternalObject() const;
 
 private:
 	class Value{
@@ -488,14 +518,14 @@ private:
 		:min(of::priv::TypeInfo<ParameterType>::min())
 		,max(of::priv::TypeInfo<ParameterType>::max())
 		,bInNotify(false)
-		,serializable(true){};
+		,serializable(true){}
 
 		Value(ParameterType v)
 		:value(v)
 		,min(of::priv::TypeInfo<ParameterType>::min())
 		,max(of::priv::TypeInfo<ParameterType>::max())
 		,bInNotify(false)
-		,serializable(true){};
+		,serializable(true){}
 
 		Value(string name, ParameterType v)
 		:name(name)
@@ -503,7 +533,7 @@ private:
 		,min(of::priv::TypeInfo<ParameterType>::min())
 		,max(of::priv::TypeInfo<ParameterType>::max())
 		,bInNotify(false)
-		,serializable(true){};
+		,serializable(true){}
 
 		Value(string name, ParameterType v, ParameterType min, ParameterType max)
 		:name(name)
@@ -511,7 +541,7 @@ private:
 		,min(min)
 		,max(max)
 		,bInNotify(false)
-		,serializable(true){};
+		,serializable(true){}
 
 		string name;
 		ParameterType value;
@@ -521,11 +551,15 @@ private:
 		bool serializable;
 		vector<weak_ptr<ofParameterGroup::Value>> parents;
 	};
+
 	shared_ptr<Value> obj;
 	std::function<void(const ParameterType & v)> setMethod;
 
 	void eventsSetValue(const ParameterType & v);
 	void noEventsSetValue(const ParameterType & v);
+
+	template<typename T, typename F>
+	friend class ofReadOnlyParameter;
 };
 
 
@@ -862,7 +896,7 @@ void ofParameter<ParameterType>::makeReferenceTo(ofParameter<ParameterType> & mo
 
 template<typename ParameterType>
 shared_ptr<ofAbstractParameter> ofParameter<ParameterType>::newReference() const{
-    return std::make_shared<ofParameter<ParameterType>>(*this);
+	return std::make_shared<ofParameter<ParameterType>>(*this);
 }
 
 template<typename ParameterType>
@@ -874,6 +908,82 @@ template<typename ParameterType>
 size_t ofParameter<ParameterType>::getNumListeners() const{
 	return obj->changedE.size();
 }
+
+template<typename ParameterType>
+const void* ofParameter<ParameterType>::getInternalObject() const{
+	return obj.get();
+}
+
+template<>
+class ofParameter<void>: public ofAbstractParameter{
+public:
+	ofParameter();
+	ofParameter(const std::string& name);
+
+	ofParameter<void>& set(const std::string & name);
+
+	void setName(const std::string & name);
+	std::string getName() const;
+
+	std::string toString() const;
+	void fromString(const std::string & name);
+
+	template<class ListenerClass, typename ListenerMethod>
+	void addListener(ListenerClass * listener, ListenerMethod method, int prio=OF_EVENT_ORDER_AFTER_APP){
+		ofAddListener(obj->changedE,listener,method,prio);
+	}
+
+	template<class ListenerClass, typename ListenerMethod>
+	void removeListener(ListenerClass * listener, ListenerMethod method, int prio=OF_EVENT_ORDER_AFTER_APP){
+		ofRemoveListener(obj->changedE,listener,method,prio);
+	}
+
+	void trigger();
+
+	void enableEvents();
+	void disableEvents();
+	bool isSerializable() const;
+	bool isReadOnly() const;
+
+	void makeReferenceTo(ofParameter<void> & mom);
+
+	void setSerializable(bool serializable);
+	shared_ptr<ofAbstractParameter> newReference() const;
+
+	void setParent(ofParameterGroup & _parent);
+
+	const ofParameterGroup getFirstParent() const{
+		auto first = std::find_if(obj->parents.begin(),obj->parents.end(),[](weak_ptr<ofParameterGroup::Value> p){return p.lock()!=nullptr;});
+		if(first!=obj->parents.end()){
+			return first->lock();
+		}else{
+			return shared_ptr<ofParameterGroup::Value>(nullptr);
+		}
+	}
+	size_t getNumListeners() const;
+
+protected:
+	const void* getInternalObject() const{
+		return obj.get();
+	}
+
+private:
+	class Value{
+	public:
+		Value()
+		:serializable(false){}
+
+		Value(string name)
+		:name(name)
+		,serializable(false){}
+
+		string name;
+		ofEvent<void> changedE;
+		bool serializable;
+		vector<weak_ptr<ofParameterGroup::Value>> parents;
+	};
+	shared_ptr<Value> obj;
+};
 
 
 
@@ -976,6 +1086,9 @@ protected:
 		return parameter.getFirstParent();
 	}
 
+	const void* getInternalObject() const{
+		return parameter.getInternalObject();
+	}
 
 	ofParameter<ParameterType> parameter;
 	

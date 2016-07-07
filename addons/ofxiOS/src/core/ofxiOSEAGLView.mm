@@ -10,6 +10,8 @@
 #include "ofAppiOSWindow.h"
 #include "ofGLRenderer.h"
 #include "ofGLProgrammableRenderer.h"
+#include <TargetConditionals.h>
+#import <GameController/GameController.h>
 
 static ofxiOSEAGLView * _instanceRef = nil;
 
@@ -230,6 +232,12 @@ static ofxiOSEAGLView * _instanceRef = nil;
 }
 
 //------------------------------------------------------
+
+-(void) resetTouches {
+
+	[activeTouches removeAllObjects];
+}
+
 - (void)touchesBegan:(NSSet *)touches 
            withEvent:(UIEvent *)event{
     

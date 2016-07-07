@@ -22,11 +22,26 @@ Product{
     Properties{
         condition: qbsBuild
         type: "staticlibrary"
-        destinationDirectory: Helpers.normalize(FileInfo.joinPaths(path, "../../lib", platform))
+        destinationDirectory: Helpers.normalize(FileInfo.joinPaths(path, "../../lib", project.platform))
     }
 
     Depends {
         name: "of"
+    }
+
+    cpp.includePaths: of.coreIncludePaths
+    cpp.defines: of.coreDefines
+    cpp.cxxStandardLibrary: of.coreCxxStandardLibrary
+    cpp.cxxLanguageVersion: of.coreCxxLanguageVersion
+    cpp.frameworks: of.coreFrameworks
+    cpp.cxxFlags: of.coreCxxFlags
+    cpp.cFlags: of.coreCFlags
+    cpp.warningLevel: of.coreWarningLevel
+    cpp.architecture: qbs.architecture
+
+    Properties{
+        condition: qbs.targetOS.contains("android")
+        cpp.sysroot: of.coreSysroot
     }
 
     property stringList FILES_EXCLUDE: {
@@ -90,7 +105,7 @@ Product{
              fileTags: "staticlibrary"
         }
         prepare: {           
-            var qbsCmd = new Command(product.make, ['Debug','-j4']);
+            var qbsCmd = new Command(product.make, ['Debug']);
             qbsCmd.description = "building openFrameworks library";
             qbsCmd.workingDirectory = product.projectDir;
             qbsCmd.silent = false;
@@ -107,7 +122,7 @@ Product{
              fileTags: "staticlibrary"
         }
         prepare: {
-            var qbsCmd = new Command(product.make, ['Release','-j4']);
+            var qbsCmd = new Command(product.make, ['Release']);
             qbsCmd.description = "building openFrameworks library";
             qbsCmd.workingDirectory = product.projectDir;
             qbsCmd.silent = false;
