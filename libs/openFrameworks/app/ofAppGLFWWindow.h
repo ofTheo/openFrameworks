@@ -10,6 +10,11 @@
 #include "ofPixels.h"
 #include "ofRectangle.h"
 
+#ifdef TARGET_LINUX
+typedef struct _XIM * XIM;
+typedef struct _XIC * XIC;
+#endif
+
 class ofBaseApp;
 
 #ifdef TARGET_OPENGLES
@@ -96,9 +101,9 @@ public:
     void * getWindowContext(){return getGLFWWindow();}
 	ofGLFWWindowSettings getSettings(){ return settings; }
 
-	ofVec3f		getWindowSize();
-	ofVec3f		getScreenSize();
-	ofVec3f 	getWindowPosition();
+	glm::vec2	getWindowSize();
+	glm::vec2	getScreenSize();
+	glm::vec2 	getWindowPosition();
 
 	void setWindowTitle(string title);
 	void setWindowPosition(int x, int y);
@@ -147,6 +152,7 @@ public:
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
 	Display* 	getX11Display();
 	Window  	getX11Window();
+	XIC			getX11XIC();
 #endif
 
 #if defined(TARGET_LINUX) && !defined(TARGET_OPENGLES)
@@ -175,6 +181,7 @@ private:
 	static void 	motion_cb(GLFWwindow* windowP_, double x, double y);
 	static void 	entry_cb(GLFWwindow* windowP_, int entered);
 	static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods);
+	static void 	char_cb(GLFWwindow* windowP_, uint32_t key);
 	static void 	resize_cb(GLFWwindow* windowP_, int w, int h);
 	static void 	exit_cb(GLFWwindow* windowP_);
 	static void		scroll_cb(GLFWwindow* windowP_, double x, double y);
@@ -184,6 +191,8 @@ private:
 #ifdef TARGET_LINUX
 	void setWindowIcon(const string & path);
 	void setWindowIcon(const ofPixels & iconPixels);
+	XIM xim;
+	XIC xic;
 #endif
 
 	ofCoreEvents coreEvents;

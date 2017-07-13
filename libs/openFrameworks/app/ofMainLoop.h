@@ -28,8 +28,8 @@ public:
 		ofAddListener(window->events().keyPressed,this,&ofMainLoop::keyPressed);
 	}
 
-	void run(std::shared_ptr<ofAppBaseWindow> window, std::shared_ptr<ofBaseApp> app);
-	void run(std::shared_ptr<ofBaseApp> app);
+	void run(std::shared_ptr<ofAppBaseWindow> window, std::shared_ptr<ofBaseApp> && app);
+	void run(std::shared_ptr<ofBaseApp> && app);
 	int loop();
 	void loopOnce();
 	void pollEvents();
@@ -42,6 +42,7 @@ public:
 	void setEscapeQuitsLoop(bool quits);
 
 	ofEvent<void> exitEvent;
+	ofEvent<void> loopEvent;
 private:
 	void keyPressed(ofKeyEventArgs & key);
 	map<std::shared_ptr<ofAppBaseWindow>,std::shared_ptr<ofBaseApp> > windowsApps;

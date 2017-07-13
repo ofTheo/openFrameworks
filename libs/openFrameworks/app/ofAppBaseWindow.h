@@ -30,11 +30,8 @@ public:
 		return false;
 	}
 	virtual void setWindowShouldClose(){
-		close();
 	}
 	virtual void close(){
-		events().notifyExit();
-		events().disable();
 	}
 	virtual ofCoreEvents & events() = 0;
 	virtual shared_ptr<ofBaseRenderer> & renderer() = 0;
@@ -45,9 +42,9 @@ public:
 	virtual void	setWindowPosition(int x, int y) {}
 	virtual void	setWindowShape(int w, int h) {}
 
-	virtual ofPoint	getWindowPosition() {return ofPoint(); }
-	virtual ofPoint	getWindowSize(){return ofPoint(); }
-	virtual ofPoint	getScreenSize(){return ofPoint(); }
+	virtual glm::vec2	getWindowPosition() {return glm::vec2(); }
+	virtual glm::vec2	getWindowSize(){return glm::vec2(); }
+	virtual glm::vec2	getScreenSize(){return glm::vec2(); }
 
 	virtual void			setOrientation(ofOrientation orientation){ }
 	virtual ofOrientation	getOrientation(){ return OF_ORIENTATION_DEFAULT; }
