@@ -121,8 +121,6 @@ vs:
 	# in the src folders in libs and the root of the addon. if your addon needs
 	# to include files in different places or a different set of files per platform
 	# they can be specified here
-	ADDON_SOURCES += libs/libfreenect/platform/windows/libusb10emu/libusb-1.0/failguard.cpp
-	ADDON_SOURCES += libs/libfreenect/platform/windows/libusb10emu/libusb-1.0/libusbemu.cpp
 
 	# include search paths, this will be usually parsed from the file system
 	# but if the addon or addon libraries need special search paths they can be
@@ -131,7 +129,6 @@ vs:
 
 	# when parsing the file system looking for include paths exclude this for all or
 	# a specific platform
-	ADDON_INCLUDES_EXCLUDE += libs/libusb-1.0/%
 
 linuxarmv6l:
 	# linux only, any library that should be included in the project using
