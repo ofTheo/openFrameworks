@@ -39,9 +39,10 @@ function build() {
 	if [ "$TYPE" == "vs" ] ; then
 	
 		cd msvc
-		
+		SET Platform=
+	
 		if [ $ARCH == 32 ] ; then
-			MSBuild.exe libusb_2015.sln //t:Build //p:Configuration=Release
+			MSBuild.exe libusb_2015.sln //t:Build //p:Configuration=Release //p:Platform=x86
 		elif [ $ARCH == 64 ] ; then
 			MSBuild.exe libusb_2015.sln //t:Build //p:Configuration=Release //p:Platform=x64
 		fi		
@@ -50,7 +51,7 @@ function build() {
 
     if [ "$TYPE" == "osx" ] ; then
         cd Xcode
-        xcodebuild -configuration Release -target libusb -project libusb.xcodeproj/
+        xcodebuild ARCHS="i386 x86_64" ONLY_ACTIVE_ARCH=NO -configuration Release -target libusb -project libusb.xcodeproj/
 	fi
 
 }
