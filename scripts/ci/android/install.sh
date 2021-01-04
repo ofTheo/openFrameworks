@@ -24,11 +24,36 @@ else
     unzip "$NDK_DIR-linux-x86_64.zip" > /dev/null 2>&1
 fi
 
-# Get project generator
-cd ~/
-rm -rf projectGenerator
-mkdir -p ~/projectGenerator
-cd ~/projectGenerator
-echo "Downloading projectGenerator from ci server"
-wget http://ci.openframeworks.cc/projectGenerator/projectGenerator_linux
-chmod +x projectGenerator_linux
+# Build project generator
+if [ -f ~/projectGenerator/projectGenerator_linux ]; then
+    echo "project generator is locally cached not building"
+    chmod +x ~/projectGenerator/projectGenerator_linux
+else
+    echo "building project generator"
+    git clone --depth=1 https://github.com/openframeworks/projectGenerator
+    rm -rf $OF_ROOT/apps/projectGenerator 2> /dev/null
+    mv projectGenerator $OF_ROOT/apps/projectGenerator
+    cd $OF_ROOT/
+    scripts/linux/download_libs.sh
+    cd $OF_ROOT/apps/projectGenerator/commandLine
+    make Release -C .
+    ret=$?
+    if [ $ret -ne 0 ]; then
+          echo "Failed building Project Generator"
+          exit 1
+    fi
+
+    mkdir -p ~/projectGenerator
+    cp bin/projectGenerator ~/projectGenerator/projectGenerator_linux
+    chmod +x ~/projectGenerator/projectGenerator_linux
+    cd $OF_ROOT/
+fi
+
+# old approach
+#cd ~/
+#rm -rf projectGenerator
+#mkdir -p ~/projectGenerator
+#cd ~/projectGenerator
+#echo "Downloading projectGenerator from ci server"
+#wget http://ci.openframeworks.cc/projectGenerator/projectGenerator_linux
+#chmod +x projectGenerator_linux
