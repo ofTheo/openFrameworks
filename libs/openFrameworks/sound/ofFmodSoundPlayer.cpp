@@ -226,13 +226,15 @@ void ofFmodSoundPlayer::unload(){
 		stop();						// try to stop the sound
 		FMOD_Sound_Release(sound);
 		bLoadedOk = false;
+        sound = NULL;
+        channel = NULL;
 	}
 }
 
 //------------------------------------------------------------
 bool ofFmodSoundPlayer::isPlaying() const{
 
-	if (!bLoadedOk) return false;
+	if (!bLoadedOk||channel == NULL) return false;
 
 	int playing = 0;
 	FMOD_Channel_IsPlaying(channel, &playing);
@@ -354,7 +356,9 @@ void ofFmodSoundPlayer::setMultiPlay(bool bMp){
 
 // ----------------------------------------------------------------------------
 void ofFmodSoundPlayer::play(){
-
+    if(!isLoaded()){
+        ofLogError("ofFmodSoundPlayer::play()") << "sound is not loaded";
+    }
 	// if it's a looping sound, we should try to kill it, no?
 	// or else people will have orphan channels that are looping
 	if (bLoop == true){
