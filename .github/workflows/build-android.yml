@@ -21,7 +21,7 @@ jobs:
     env:
       TARGET: ${{matrix.cfg.target}}
       GRADLE_TARGET: ${{matrix.cfg.gradle_target}}
-      NDK_DIR: android-ndk-r15c
+      NDK_DIR: android-ndk-r21e
     steps:
     - uses: actions/checkout@v2
     - name: Cache projectGenerator folder
@@ -32,7 +32,7 @@ jobs:
     - name: Cache NDK
       uses: actions/cache@v2
       with:
-        path: '~/android-ndk-r15c'
+        path: '~/android-ndk-r21e'
         key: ${{ runner.os }}-android-ndk-${{matrix.cfg.gradle_target}}
     - name: install
       run: ./scripts/ci/$TARGET/install.sh
