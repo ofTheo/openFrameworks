@@ -82,7 +82,6 @@ OF_CORE_THIRDPARTY_SHARED_LIBS := $(filter-out $(CORE_EXCLUSIONS),$(ALL_OF_CORE_
 ################################################################################
 
 ifeq ($(PLATFORM_OS),Linux)
-    $(info =============================THEO SANTY CHECK========================)
 	OF_CORE_LIBRARY_LDFLAGS = $(addprefix -L,$(dir $(OF_CORE_THIRDPARTY_SHARED_LIBS)))
 	OF_CORE_LIBRARY_LDFLAGS += $(addprefix -l,$(patsubst lib%,%,$(basename $(notdir $(OF_CORE_THIRDPARTY_SHARED_LIBS)))))
 endif
@@ -217,6 +216,13 @@ endif
 # generate the list of core libraries
 # 1. Add all of the third party static libs defined by the platform config files.
 OF_CORE_LIBS := $(OF_CORE_THIRDPARTY_STATIC_LIBS)
+
+ifdef MAKEFILE_DEBUG
+    $(info ---OF_CORE_THIRDPARTY_STATIC_LIBS THEO )
+    $(foreach v, $(OF_CORE_THIRDPARTY_STATIC_LIBS),$(info $(v)))
+    $(info ---OF_CORE_THIRDPARTY_SHARED_LIBS THEO )
+    $(foreach v, $(OF_CORE_THIRDPARTY_SHARED_LIBS),$(info $(v)))
+endif
 
 # 2. Add all of the third party shared libs defined by the platform config files.
 ifneq ($(PLATFORM_OS),Linux)

@@ -263,4 +263,6 @@ ifdef MAKEFILE_DEBUG
     $(foreach v, $(PROJECT_ADDONS_LDFLAGS),$(info $(v)))
     $(info ---PROJECT_ADDONS_DATA---)
     $(foreach v, $(PROJECT_ADDONS_DATA),$(info $(v)))
+    $(info ---PROJECT_ADDONS_PKG_CONFIG_LIBRARIES -- THEO)
+    $(foreach v, $(PROJECT_ADDONS_PKG_CONFIG_LIBRARIES),$(info $(v)))
 endif
