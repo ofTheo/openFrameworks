@@ -104,6 +104,7 @@ endif
 
 ifdef MAKEFILE_DEBUG
     $(info ===================ADDONS================)
+    $(foreach v, $(OF_CORE_THIRDPARTY_SHARED_LIBS),$(info $(v)))
 endif
 
 # check to make sure OF_ROOT is defined
