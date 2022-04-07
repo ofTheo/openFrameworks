@@ -11,6 +11,7 @@ echo "**** Building emptyExample ****"
 cd $ROOT/scripts/templates/msys2
 make ${USE_CCACHE} -j4 Debug
 
+export MAKEFILE_DEBUG=1
 echo "**** Building allAddonsExample ****"
 cd $ROOT
 cp scripts/templates/msys2/Makefile examples/templates/allAddonsExample/
