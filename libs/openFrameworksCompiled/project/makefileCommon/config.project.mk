@@ -82,6 +82,7 @@ OF_CORE_THIRDPARTY_SHARED_LIBS := $(filter-out $(CORE_EXCLUSIONS),$(ALL_OF_CORE_
 ################################################################################
 
 ifeq ($(PLATFORM_OS),Linux)
+    $(info =============================THEO SANTY CHECK========================)
 	OF_CORE_LIBRARY_LDFLAGS = $(addprefix -L,$(dir $(OF_CORE_THIRDPARTY_SHARED_LIBS)))
 	OF_CORE_LIBRARY_LDFLAGS += $(addprefix -l,$(patsubst lib%,%,$(basename $(notdir $(OF_CORE_THIRDPARTY_SHARED_LIBS)))))
 endif
@@ -104,7 +105,6 @@ endif
 
 ifdef MAKEFILE_DEBUG
     $(info ===================ADDONS================)
-    $(foreach v, $(OF_CORE_THIRDPARTY_SHARED_LIBS),$(info $(v)))
 endif
 
 # check to make sure OF_ROOT is defined
