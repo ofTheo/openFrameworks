@@ -241,8 +241,20 @@ ifneq ($(strip $(CORE_PKG_CONFIG_LIBRARIES)),)
 	endif
 endif
 
+ifdef MAKEFILE_DEBUG
+    $(info ---OF_CORE_LIBS THEO )
+    $(foreach v, $(OF_CORE_LIBS),$(info $(v)))
+endif
+
+ifdef MAKEFILE_DEBUG
+    $(info ---PLATFORM_LIBRARIES THEO )
+    $(foreach v, $(PLATFORM_LIBRARIES),$(info $(v)))
+endif
+
 # 4. Add the libraries defined in the platform config files.
 OF_CORE_LIBS += $(addprefix -l,$(PLATFORM_LIBRARIES))
+
+
 
 # add the list of addon includes
 ifneq ($(strip $(PROJECT_ADDONS_PKG_CONFIG_LIBRARIES)),)
