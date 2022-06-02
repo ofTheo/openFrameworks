@@ -174,7 +174,7 @@ else
 endif
 
 
-PLATFORM_CFLAGS = PLATFORM_CXXFLAGS
+PLATFORM_CFLAGS = $(PLATFORM_CXXFLAGS)
 
 
 ################################################################################
