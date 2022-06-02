@@ -138,25 +138,21 @@ ifeq ($(CXX),g++)
 	GCC_MAJOR_EQ_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \= 4)
 	GCC_MAJOR_GT_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \> 4)
 	GCC_MAJOR_GTEQ_6 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 6)
-	GCC_MAJOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 8)
-	GCC_MINOR_GTEQ_7 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \<= 7)
+	GCC_MAJOR_GTEQ_8 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 8)
+	GCC_MINOR_GTEQ_7 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 7)
 	GCC_MINOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 9)
 	ifeq ("$(GCC_MAJOR_EQ_4)","1")
 		ifeq ("$(GCC_MINOR_GTEQ_7)","1")
-			PLATFORM_CFLAGS = -Wall -Werror=return-type -DHAS_TLS=0
 			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++0x -DHAS_TLS=0
 		else
 			ifeq ("$(GCC_MINOR_GTEQ_9)","1")
-				PLATFORM_CFLAGS = -Wall -Werror=return-type -DGCC_HAS_REGEX
 				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++14 -DGCC_HAS_REGEX
 			else
-				PLATFORM_CFLAGS = -Wall -Werror=return-type
 				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
 			endif
 		endif
 	endif
 	ifeq ("$(GCC_MAJOR_GT_4)","1")
-		PLATFORM_CFLAGS = -Wall -Werror=return-type -DGCC_HAS_REGEX
 		PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++14 -DGCC_HAS_REGEX
 	endif
 	# c++17 for gcc 6 and newer
@@ -165,23 +161,21 @@ ifeq ($(CXX),g++)
 	endif
 else
 	ifeq ($(CXX),g++-5)
-		PLATFORM_CFLAGS = -Wall -Werror=return-type -DGCC_HAS_REGEX
 		PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++14 -DGCC_HAS_REGEX
 	else
 		ifeq ($(CXX),g++-4.9)
-			PLATFORM_CFLAGS = -Wall -Werror=return-type -DGCC_HAS_REGEX
 			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++14 -DGCC_HAS_REGEX
 		else
 			ifeq ($(CXX),g++-4.8)
-				PLATFORM_CFLAGS = -Wall -Werror=return-type
 				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
 			else
-				PLATFORM_CFLAGS = -Wall -Werror=return-type
 				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
 			endif
 		endif
 	endif
 endif
+
+PLATFORM_CFLAGS = PLATFORM_CXXFLAGS
 
 
 ################################################################################
