@@ -128,6 +128,8 @@ PLATFORM_REQUIRED_ADDONS =
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
 
+PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++17 -DGCC_HAS_REGEX
+
 # Code Generation Option Flags (http://gcc.gnu.org/onlinedocs/gcc/Code-Gen-Options.html)
 # find out version of gcc:
 # < 4.7.x  c++0x
@@ -136,11 +138,11 @@ PLATFORM_REQUIRED_ADDONS =
 # other compilers c++11 by now
 ifeq ($(CXX),g++)
 	GCC_MAJOR_EQ_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \= 4)
+	GCC_MINOR_GTEQ_7 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 7)
+	GCC_MINOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 9)
 	GCC_MAJOR_GT_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \> 4)
 	GCC_MAJOR_GTEQ_6 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 6)
 	GCC_MAJOR_GTEQ_8 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 8)
-	GCC_MINOR_GTEQ_7 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 7)
-	GCC_MINOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 9)
 	ifeq ("$(GCC_MAJOR_EQ_4)","1")
 		ifeq ("$(GCC_MINOR_GTEQ_7)","1")
 			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++0x -DHAS_TLS=0
@@ -166,14 +168,11 @@ else
 		ifeq ($(CXX),g++-4.9)
 			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++14 -DGCC_HAS_REGEX
 		else
-			ifeq ($(CXX),g++-4.8)
-				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
-			else
-				PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
-			endif
+			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++11
 		endif
 	endif
 endif
+
 
 PLATFORM_CFLAGS = PLATFORM_CXXFLAGS
 
