@@ -454,26 +454,15 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 
 #endif
 
+//#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
+    #define OF_USE_EXPERIMENTAL_FS 1
+//#endif
+
 //------------------------------------------------ forward declaration for std::filesystem::path
 // Remove from here once everything is using std::filesystem::path
 #if OF_USING_STD_FS
-#	if __cplusplus < 201703L
+#	if __cplusplus < 201703L && !defined(OF_USE_EXPERIMENTAL_FS)
 #       define OF_USE_EXPERIMENTAL_FS 1
-
-    namespace std {
-        namespace experimental{
-            namespace filesystem {
-                namespace v1 {
-                    namespace __cxx11 {
-                        class path;
-                    }
-                }
-
-                using v1::__cxx11::path;
-            }
-        }
-        namespace filesystem = experimental::filesystem;
-    }
 #	else
 #       define OF_USE_EXPERIMENTAL_FS 0
 
@@ -494,4 +483,23 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 	namespace std {
 		namespace filesystem = boost::filesystem;
 	}
+#endif
+
+#if OF_USE_EXPERIMENTAL_FS
+    #include <experimental/filesystem>
+
+    namespace std {
+        namespace experimental{
+            namespace filesystem {
+                namespace v1 {
+                    namespace __cxx11 {
+                        class path;
+                    }
+                }
+
+                using v1::__cxx11::path;
+            }
+        }
+        namespace filesystem = experimental::filesystem;
+    }
 #endif
