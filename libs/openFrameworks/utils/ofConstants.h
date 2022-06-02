@@ -458,31 +458,28 @@ std::unique_ptr<T> make_unique(Args&&... args) {
     #define OF_USE_EXPERIMENTAL_FS 1
 //#endif
 
-//------------------------------------------------ forward declaration for std::filesystem::path
-// Remove from here once everything is using std::filesystem::path
-#if OF_USING_STD_FS
-#	if __cplusplus < 201703L && !defined(OF_USE_EXPERIMENTAL_FS)
-#       define OF_USE_EXPERIMENTAL_FS 1
-#	else
-#       define OF_USE_EXPERIMENTAL_FS 0
-
-#include <filesystem>
-
-#	endif
-#else
-#	if !_MSC_VER
-#		define BOOST_NO_CXX11_SCOPED_ENUMS
-#		define BOOST_NO_SCOPED_ENUMS
-#	endif
-#   include <boost/filesystem.hpp>
-	namespace boost {
-		namespace filesystem {
-			class path;
-		}
-	}
-	namespace std {
-		namespace filesystem = boost::filesystem;
-	}
+#ifndef OF_USE_EXPERIMENTAL_FS
+    //------------------------------------------------ forward declaration for std::filesystem::path
+    // Remove from here once everything is using std::filesystem::path
+    #if OF_USING_STD_FS
+        #if __cplusplus >= 201703L
+            #include <filesystem>
+        #endif
+    #else
+    #	if !_MSC_VER
+    #		define BOOST_NO_CXX11_SCOPED_ENUMS
+    #		define BOOST_NO_SCOPED_ENUMS
+    #	endif
+    #   include <boost/filesystem.hpp>
+        namespace boost {
+            namespace filesystem {
+                class path;
+            }
+        }
+        namespace std {
+            namespace filesystem = boost::filesystem;
+        }
+    #endif
 #endif
 
 #if OF_USE_EXPERIMENTAL_FS
