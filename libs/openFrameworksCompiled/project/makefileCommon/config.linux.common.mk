@@ -143,6 +143,7 @@ ifeq ($(CXX),g++)
 	GCC_MAJOR_GT_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \> 4)
 	GCC_MAJOR_GTEQ_6 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 6)
 	GCC_MAJOR_GTEQ_8 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 8)
+	GCC_MAJOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \>= 9)
 	ifeq ("$(GCC_MAJOR_EQ_4)","1")
 		ifeq ("$(GCC_MINOR_GTEQ_7)","1")
 			PLATFORM_CXXFLAGS = -Wall -Werror=return-type -std=c++0x -DHAS_TLS=0
