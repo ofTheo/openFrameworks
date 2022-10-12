@@ -30,9 +30,10 @@ if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
 . "$SCRIPT_DIR/../../dev/downloader.sh"
 
 downloadToolchain(){
-    downloader http://ci.openframeworks.cc/rpi_toolchain_gcc6.tar.bz2
-    tar xjf rpi_toolchain_gcc6.tar.bz2
-    rm rpi_toolchain_gcc6.tar.bz2
+    downloader http://ci.openframeworks.cc/rpi-cross-gcc-10.3.0-pi_3+.tar.gz
+    tar xjf rpi-cross-gcc-10.3.0-pi_3+.tar.gz
+    rm rpi-cross-gcc-10.3.0-pi_3+.tar.gz
+    ls -la
 }
 
 downloadFirmware(){
@@ -69,8 +70,8 @@ createRaspbianImg
 downloadToolchain
 downloadFirmware
 
-cd $ROOT/raspbian/usr/lib
-relativeSoftLinks
-cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
-relativeSoftLinks
-cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
+#cd $ROOT/raspbian/usr/lib
+#relativeSoftLinks
+#cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
+#relativeSoftLinks
+#cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
