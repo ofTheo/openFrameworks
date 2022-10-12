@@ -65,9 +65,13 @@ relativeSoftLinks(){
 ROOT=$( cd "$(dirname "$0")" ; pwd -P )
 echo $ROOT
 cd $ROOT
+echo "installPackages"
 installPackages
+echo "createRaspbianImg"
 createRaspbianImg
+echo "downloadToolchain"
 downloadToolchain
+echo "downloadFirmware"
 downloadFirmware
 
 #cd $ROOT/raspbian/usr/lib
