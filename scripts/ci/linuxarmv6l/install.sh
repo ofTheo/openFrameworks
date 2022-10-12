@@ -78,6 +78,17 @@ cd $ROOT/raspbian/usr/lib
 relativeSoftLinks
 cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
 relativeSoftLinks
+
+echo "listing raspbian/usr/lib/gcc/arm-linux-gnueabihf"
+ls -la $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/
+
+echo "listing raspbian/usr/lib/arm-linux-gnueabihf"
+ls -la $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/
+
+ln -s /usr/lib/arm-linux-gnueabihf/crtn.o $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/crtn.o
+ln -s /usr/lib/arm-linux-gnueabihf/crt1.o $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/crt1.o
+ln -s /usr/lib/arm-linux-gnueabihf/crti.o $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/crti.o 
+
 #cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
 cd $ROOT
 
