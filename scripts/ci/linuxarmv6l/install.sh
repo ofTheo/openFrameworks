@@ -79,3 +79,5 @@ relativeSoftLinks
 cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
 relativeSoftLinks
 #cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
+cd $ROOT
+ls -la
