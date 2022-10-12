@@ -32,9 +32,7 @@ if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
 downloadToolchain(){
     downloader http://ci.openframeworks.cc/rpi-toolchain-gcc10.3.0.tar.gz
     tar -xzf rpi-toolchain-gcc10.3.0.tar.gz
-    ls -la
     mv cross-pi-gcc-10.3.0-2 rpi_toolchain
-    ls -la
     rm rpi-toolchain-gcc10.3.0.tar.gz
 }
 
@@ -82,4 +80,4 @@ cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
 relativeSoftLinks
 #cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
 cd $ROOT
-ls -la
+
