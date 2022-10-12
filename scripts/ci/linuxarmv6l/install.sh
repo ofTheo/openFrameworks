@@ -33,6 +33,8 @@ downloadToolchain(){
     downloader http://ci.openframeworks.cc/rpi-toolchain-gcc10.3.0.tar.gz
     tar -xzf rpi-toolchain-gcc10.3.0.tar.gz
     ls -la
+    mv cross-pi-gcc-10.3.0-2 rpi_toolchain
+    ls -la
     rm rpi-toolchain-gcc10.3.0.tar.gz
 }
 
