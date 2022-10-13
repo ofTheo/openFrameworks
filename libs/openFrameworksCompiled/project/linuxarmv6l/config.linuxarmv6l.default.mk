@@ -124,8 +124,11 @@ PLATFORM_DEFINES += USE_VCHIQ_ARM
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
 
+SYSROOT=$(RPI_ROOT)
+PLATFORM_CFLAGS = --sysroot=$(SYSROOT)
+
 #c++ 17 support - comment out two lines below to use c++11
-PLATFORM_CFLAGS = -DDEBUG -Wall -Werror=return-type -DGCC_HAS_REGEX
+PLATFORM_CFLAGS += -Wall -Werror=return-type -DGCC_HAS_REGEX
 PLATFORM_CFLAGS += -std=c++17
 PLATFORM_LDFLAGS += -lstdc++fs
 
@@ -266,10 +269,6 @@ endif
 	PLATFORM_CC = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-gcc
 	PLATFORM_AR = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-ar
 	PLATFORM_LD = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-ld
-
-	SYSROOT=$(RPI_ROOT)
-
-	PLATFORM_CFLAGS += --sysroot=$(SYSROOT)
 
 	PLATFORM_HEADER_SEARCH_PATHS += $(SYSROOT)/usr/include/c++
 	PLATFORM_HEADER_SEARCH_PATHS += $(SYSROOT)/usr/include/$(GCC_PREFIX)/c++/10
