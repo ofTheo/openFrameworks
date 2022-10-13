@@ -125,6 +125,7 @@ PLATFORM_DEFINES += USE_VCHIQ_ARM
 ################################################################################
 
 #c++ 17 support - comment out two lines below to use c++11
+PLATFORM_CFLAGS = -DDEBUG -Wall -Werror=return-type -DGCC_HAS_REGEX
 PLATFORM_CFLAGS += -std=c++17
 PLATFORM_LDFLAGS += -lstdc++fs
 
@@ -136,6 +137,7 @@ PLATFORM_CFLAGS += -ftree-vectorize
 PLATFORM_CFLAGS += -Wno-psabi
 PLATFORM_CFLAGS += -pipe
 
+PLATFORM_CXXFLAGS = $(PLATFORM_CFLAGS)
 
 ################################################################################
 # PLATFORM LIBRARIES
