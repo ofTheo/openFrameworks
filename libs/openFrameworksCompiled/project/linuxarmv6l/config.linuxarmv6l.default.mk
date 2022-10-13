@@ -132,7 +132,7 @@ PLATFORM_CFLAGS += -Wall -Werror=return-type -DGCC_HAS_REGEX
 PLATFORM_CFLAGS += -std=c++17
 PLATFORM_LDFLAGS += -lstdc++fs
 
-PLATFORM_CFLAGS += -march=arm64
+PLATFORM_CFLAGS += -march=aarch64
 PLATFORM_CFLAGS += -mfpu=vfp
 PLATFORM_CFLAGS += -mfloat-abi=hard
 PLATFORM_CFLAGS += -fPIC
