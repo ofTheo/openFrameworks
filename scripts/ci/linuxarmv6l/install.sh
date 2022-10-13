@@ -74,13 +74,12 @@ downloadToolchain
 echo "downloadFirmware"
 downloadFirmware
 
-cd $ROOT/raspbian/usr/lib
-relativeSoftLinks
-cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
-relativeSoftLinks
-cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/10
-relativeSoftLinks
-
+#cd $ROOT/raspbian/usr/lib
+#relativeSoftLinks
+#cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
+#relativeSoftLinks
+#cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/10
+#relativeSoftLinks
 #echo "listing raspbian/usr/lib/arm-linux-gnueabihf"
 #ls -la $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/
 #
@@ -91,3 +90,4 @@ relativeSoftLinks
 ##cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
 cd $ROOT
 
+ls -la raspbian/usr/lib/arm-linux-gnueabihf/
