@@ -141,8 +141,6 @@ PLATFORM_CXXVER = -std=c++17
 GCC_MAJOR := $(shell expr `gcc -dumpversion | cut -f1 -d.`)
 GCC_MINOR := $(shell expr `gcc -dumpversion | cut -f2 -d.`)
 
-$(info gcc major is $(GCC_MAJOR))
-
 ifeq ("$(GCC_MAJOR)","4")
 	ifeq ($(shell expr $(GCC_MINOR) \< 7), 1)
 		PLATFORM_CXXVER = -std=c++0x
