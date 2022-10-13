@@ -132,7 +132,7 @@ PLATFORM_CFLAGS += -Wall -Werror=return-type -DGCC_HAS_REGEX
 PLATFORM_CFLAGS += -std=c++17
 PLATFORM_LDFLAGS += -lstdc++fs
 
-PLATFORM_CFLAGS += -march=aarch64
+PLATFORM_CFLAGS += -march=armv6
 PLATFORM_CFLAGS += -mfpu=vfp
 PLATFORM_CFLAGS += -mfloat-abi=hard
 PLATFORM_CFLAGS += -fPIC
@@ -262,7 +262,7 @@ endif
 	ifdef GCC_PREFIX
 		#You have specified GCC_PREFIX with an environment variable
 	else
-		GCC_PREFIX = aarch64-linux-gnu
+		GCC_PREFIX = arm-linux-gnueabihf
 	endif
 
 	PLATFORM_CXX = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-g++

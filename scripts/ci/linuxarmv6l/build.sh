@@ -14,18 +14,19 @@ cd $OF_ROOT
 # this carries over to subsequent compilations of examples
 sed -i "s/PLATFORM_OPTIMIZATION_CFLAGS_DEBUG = .*/PLATFORM_OPTIMIZATION_CFLAGS_DEBUG = -g0/" $PROJECTS/makefileCommon/config.linux.common.mk
 cd $PROJECTS
-export GCC_PREFIX=aarch64-linux-gnu
+export GCC_PREFIX=arm-linux-gnueabihf
 export GST_VERSION=1.0
 export RPI_ROOT=${OF_ROOT}/scripts/ci/$TARGET/raspbian
 export TOOLCHAIN_ROOT=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain
 export PLATFORM_OS=Linux
-export PLATFORM_ARCH=aarch64
+export PLATFORM_ARCH=armv6l
 export PKG_CONFIG_LIBDIR=${RPI_ROOT}/usr/lib/pkgconfig:${RPI_ROOT}/usr/lib/${GCC_PREFIX}/pkgconfig:${RPI_ROOT}/usr/share/pkgconfig
 export CXX="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-g++"
 export CC="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-gcc"
 export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
 export SYSROOT=${RPI_ROOT}
+
 make Debug -j2
 
 echo "**** Building emptyExample ****"
