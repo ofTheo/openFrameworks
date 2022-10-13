@@ -275,6 +275,8 @@ endif
 
 	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/usr/lib/$(GCC_PREFIX)
 	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/usr/lib/gcc/$(GCC_PREFIX)/10
+	PLATFORM_LIBRARY_SEARCH_PATHS += $(TOOLCHAIN_ROOT)/$(GCC_PREFIX)/libc/lib
+	PLATFORM_LIBRARY_SEARCH_PATHS += $(TOOLCHAIN_ROOT)/$(GCC_PREFIX)/libc/usr/lib
 
 	PLATFORM_LDFLAGS += --sysroot=$(SYSROOT)
 	PLATFORM_LDFLAGS += -Xlinker -rpath-link=$(SYSROOT)/usr/lib/$(GCC_PREFIX)
@@ -283,6 +285,8 @@ endif
 	PLATFORM_LDFLAGS += -Xlinker -rpath-link=$(SYSROOT)/usr/lib/arm-linux-gnueabihf/pulseaudio
 	PLATFORM_LDFLAGS += -L/lib/$(GCC_PREFIX)
 	PLATFORM_LDFLAGS += -L/usr/lib/$(GCC_PREFIX)
+	PLATFORM_LDFLAGS += -L$(TOOLCHAIN_ROOT)/$(GCC_PREFIX)/libc/lib
+	PLATFORM_LDFLAGS += -L$(TOOLCHAIN_ROOT)/$(GCC_PREFIX)/libc/usr/lib
 	
 	PKG_CONFIG_LIBDIR=$(SYSROOT)/usr/lib/pkgconfig:$(SYSROOT)/usr/lib/$(GCC_PREFIX)/pkgconfig:$(SYSROOT)/usr/share/pkgconfig
 
