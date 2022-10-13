@@ -39,7 +39,7 @@ downloadToolchain(){
 downloadFirmware(){
     wget https://github.com/raspberrypi/firmware/archive/master.zip -O firmware.zip
     unzip firmware.zip
-    cp -r firmware-master/opt raspbian/
+    cp -r firmware-master/opt/vs raspbian/
     rm -r firmware-master
     rm firmware.zip
 }
@@ -74,12 +74,12 @@ downloadToolchain
 echo "downloadFirmware"
 downloadFirmware
 
-#cd $ROOT/raspbian/usr/lib
-#relativeSoftLinks
-#cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
-#relativeSoftLinks
-#cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/10
-#relativeSoftLinks
+cd $ROOT/raspbian/usr/lib
+relativeSoftLinks
+cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
+relativeSoftLinks
+cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/10
+relativeSoftLinks
 
 #echo "listing raspbian/usr/lib/arm-linux-gnueabihf"
 #ls -la $ROOT/raspbian/usr/lib/arm-linux-gnueabihf/
