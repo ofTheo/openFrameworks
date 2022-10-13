@@ -25,6 +25,7 @@ export CXX="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-g++"
 export CC="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-gcc"
 export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
+export SYSROOT=${RPI_ROOT}
 make Debug -j2
 
 echo "**** Building emptyExample ****"
