@@ -7,3 +7,6 @@ $ROOT/scripts/msys2/download_libs.sh --silent
 if [[ $MINGW_PACKAGE_PREFIX ]]; then 
     pacman -S --noconfirm $MINGW_PACKAGE_PREFIX-ccache
 fi
+
+echo "looking for media engine"
+pacman -F mfmediaengine.h
