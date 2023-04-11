@@ -4,7 +4,7 @@ ROOT=$(pwd -P)
 
 echo "looking for media engine"
 pacman -Fy
-pacman -f mfmediaengine.h
+pacman -F mfmediaengine.h
 
 $ROOT/scripts/msys2/install_dependencies.sh --noconfirm
 $ROOT/scripts/msys2/download_libs.sh --silent
