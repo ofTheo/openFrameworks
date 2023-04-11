@@ -9,4 +9,4 @@ if [[ $MINGW_PACKAGE_PREFIX ]]; then
 fi
 
 echo "looking for media engine"
-pacman -F mfmediaengine.h
+pacman -Fy mfmediaengine.h
