@@ -1,5 +1,8 @@
 name: build-linuxarm
 
+#caching runner from
+# https://github.com/pguyot/arm-runner-action/blob/main/.github/workflows/test-cache.yml
+
 # make the action not run on the local repo if the branch is also in a pull request to OF/OF
 on:
   push:
@@ -12,7 +15,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'examples/**'
-
     
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,18 +31,36 @@ jobs:
      TARGET: ${{matrix.cfg.target}}
     steps:
     - uses: actions/checkout@v3
-    - uses: pguyot/arm-runner-action@v2
-      id: build_image
+    - uses: actions/cache@v3
+      id: cache
+      with:
+        path: $RUNNER_TEMP/test_cache.img
+        key: ${{ hashFiles('**/ci/linuxarmv6l/*.sh') }}
+#        key: ${{ hashFiles('**/test-cache.yml') }}-${{ hashFiles('**/*.sh') }}
+    - uses: pguyot/arm-runner-action@HEAD
+      id: install_deps
+      if: steps.cache.outputs.cache-hit != 'true'
       with:
         base_image: raspios_lite:2022-04-04
         image_additional_mb: 3096
+        optimize_image: no
+        commands: |
+          set -e
+          echo "2 - install deps"
+          ./scripts/linux/debian/install_dependencies.sh -y
+          echo "3 - install omx"
+          apt-get -y install gstreamer1.0-omx
+    - name: Move and rename image with dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        mv ${{ steps.install_deps.outputs.image }} $RUNNER_TEMP/test_cache.img
+    - uses: pguyot/arm-runner-action@HEAD
+      id: build_image
+      with:
+        base_image: file://$RUNNER_TEMP/test_cache.img
         commands: |
             echo "1 - download libs";
             ./scripts/linux/download_libs.sh -a ${{matrix.cfg.libs}};
-            echo "2 - install deps"
-            ./scripts/linux/debian/install_dependencies.sh -y
-            echo "3 - install omx"
-            apt-get -y install gstreamer1.0-omx
             echo "4 - build";
             ./scripts/ci/$TARGET/build-arm-runner.sh;
 
