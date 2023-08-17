@@ -27,7 +27,7 @@ export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
 
 rm -rf $RPI_ROOT/arm-linux-gnueabihf
-cp $TOOLCHAIN_ROOT/arm-linux-gnueabihf $RPI_ROOT/arm-linux-gnueabihf
+cp -r $TOOLCHAIN_ROOT/arm-linux-gnueabihf $RPI_ROOT/arm-linux-gnueabihf
 
 CROSS_PI_PATH=$TOOLCHAIN_ROOT
 export LD_LIBRARY_PATH=$CROSS_PI_PATH/lib:$LD_LIBRARY_PATH
