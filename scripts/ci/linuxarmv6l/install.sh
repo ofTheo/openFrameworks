@@ -35,7 +35,7 @@ downloadToolchain(){
     wget https://github.com/openframeworks/openFrameworks/releases/download/tools/cross-gcc-10.3.0-pi_64.tar.gz
     tar xvf cross-gcc-10.3.0-pi_64.tar.gz
     rm cross-gcc-10.3.0-pi_64.tar.gz
-    mv cross-gcc-10.3.0-pi_64 rpi_toolchain
+    mv cross-pi-gcc-10.3.0-64 rpi_toolchain
 }
 
 downloadFirmware(){
