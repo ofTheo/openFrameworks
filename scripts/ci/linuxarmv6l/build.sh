@@ -25,6 +25,10 @@ export CXX="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-g++"
 export CC="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-gcc"
 export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
+
+export PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain/bin:$PATH
+export LD_LIBRARY_PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain/lib:$LD_LIBRARY_PATH
+
 make Debug -j2
 
 echo "**** Building emptyExample ****"
