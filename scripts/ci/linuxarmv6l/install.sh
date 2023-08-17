@@ -14,6 +14,7 @@ trapError() {
 installPackages(){
     sudo apt-get -y update
     sudo apt-get -y install multistrap unzip
+    sudo apt-get -y install gcc-multilib
     #workaround for https://bugs.launchpad.net/ubuntu/+source/multistrap/+bug/1313787
     sudo sed -i s/\$forceyes//g /usr/sbin/multistrap
 }
