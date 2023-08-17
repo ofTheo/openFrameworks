@@ -26,16 +26,13 @@ export CC="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-gcc"
 export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
 
-rm -rf $RPI_ROOT/arm-linux-gnueabihf
-cp -r $TOOLCHAIN_ROOT/arm-linux-gnueabihf $RPI_ROOT/arm-linux-gnueabihf
+CROSS_PI_PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain
+export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
+export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
+export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
+export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
 
-CROSS_PI_PATH=$TOOLCHAIN_ROOT
-export LD_LIBRARY_PATH=$CROSS_PI_PATH/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$LD_LIBRARY_PATH
-
-export PLATFORM_LDFLAGS="-L$CROSS_PI_PATH/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib/"
+#export PLATFORM_LDFLAGS="-L$CROSS_PI_PATH/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib/"
 
 make Debug -j2
 
