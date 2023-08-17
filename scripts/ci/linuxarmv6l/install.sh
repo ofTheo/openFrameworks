@@ -14,7 +14,7 @@ trapError() {
 installPackages(){
     sudo apt-get -y update
     sudo apt-get -y install multistrap unzip
-    sudo apt-get -y install gcc-multilib
+#    sudo apt-get -y install gcc-multilib
     #workaround for https://bugs.launchpad.net/ubuntu/+source/multistrap/+bug/1313787
     sudo sed -i s/\$forceyes//g /usr/sbin/multistrap
 }
@@ -76,4 +76,4 @@ cd $ROOT/raspbian/usr/lib
 relativeSoftLinks
 cd $ROOT/raspbian/usr/lib/arm-linux-gnueabihf
 relativeSoftLinks
-cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
+#cd $ROOT/raspbian/usr/lib/gcc/arm-linux-gnueabihf/4.9
