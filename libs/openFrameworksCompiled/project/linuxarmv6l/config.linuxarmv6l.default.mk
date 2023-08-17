@@ -254,11 +254,6 @@ endif
 	else
 		TOOLCHAIN_ROOT = /opt/cross/bin
 	endif
-
-	ifdef TOOLCHAIN_LD_PATHS
-		PLATFORM_LIBRARY_SEARCH_PATHS += $TOOLCHAIN_LD_PATHS
-	endif
-
 	ifdef GCC_PREFIX
 		#You have specified GCC_PREFIX with an environment variable
 	else
@@ -279,6 +274,8 @@ endif
 
 	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/usr/lib/$(GCC_PREFIX)
 	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/usr/lib/gcc/$(GCC_PREFIX)/7
+	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/../rpi_toolchain/arm-linux-gnueabihf/libc/usr/lib
+	PLATFORM_LIBRARY_SEARCH_PATHS += $(SYSROOT)/../rpi_toolchain/arm-linux-gnueabihf/libc/lib
 
 	PLATFORM_LDFLAGS += --sysroot=$(SYSROOT)
 	PLATFORM_LDFLAGS += -Xlinker -rpath-link=$(SYSROOT)/usr/lib/$(GCC_PREFIX)
