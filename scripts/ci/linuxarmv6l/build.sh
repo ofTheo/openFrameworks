@@ -32,7 +32,7 @@ export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$LD_LIBRARY_PATH
 
-export LDFLAGS="-L$CROSS_PI_PATH/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib/"
+export PLATFORM_LDFLAGS="-L$CROSS_PI_PATH/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib/"
 
 make Debug -j2
 
