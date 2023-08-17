@@ -32,10 +32,18 @@ if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
 
 downloadToolchain(){
     echo "downloading toolchain"
-    wget https://github.com/openframeworks/openFrameworks/releases/download/tools/cross-gcc-10.3.0-pi_64.tar.gz
-    tar xvf cross-gcc-10.3.0-pi_64.tar.gz
-    rm cross-gcc-10.3.0-pi_64.tar.gz
-    mv cross-pi-gcc-10.3.0-64 rpi_toolchain
+    wget https://github.com/openframeworks/openFrameworks/releases/download/tools/rpi_toolchain_gcc8.tar.gz
+    tar xvf rpi_toolchain_gcc8.tar.gz
+    rm rpi_toolchain_gcc8.tar.gz
+    mv cross-pi-gcc-8.3.0-1 rpi_toolchain
+    sudo ln -sf /usr/include/arm-linux-gnueabihf/asm/* /usr/include/asm/
+    sudo ln -sf /usr/include/arm-linux-gnueabihf/gnu/* /usr/include/gnu/
+    sudo ln -sf /usr/include/arm-linux-gnueabihf/bits/* /usr/include/bits/
+    sudo ln -sf /usr/include/arm-linux-gnueabihf/sys/* /usr/include/sys/
+    sudo ln -sf /usr/include/arm-linux-gnueabihf/openssl/* /usr/include/openssl/
+    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crtn.o /usr/lib/crtn.o
+    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crt1.o /usr/lib/crt1.o
+    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crti.o /usr/lib/crti.o
 }
 
 downloadFirmware(){
