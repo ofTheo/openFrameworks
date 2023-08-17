@@ -26,8 +26,11 @@ export CC="${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-gcc"
 export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
 
-export PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain/bin:$PATH
-export LD_LIBRARY_PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain/lib:$LD_LIBRARY_PATH
+CROSS_PI_PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain
+export LD_LIBRARY_PATH=$CROSS_PI_PATH/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$LD_LIBRARY_PATH
 
 make Debug -j2
 
