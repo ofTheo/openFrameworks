@@ -30,9 +30,10 @@ if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
 . "$SCRIPT_DIR/../../dev/downloader.sh"
 
 downloadToolchain(){
-    downloader http://ci.openframeworks.cc/rpi_toolchain_gcc6.tar.bz2
-    tar xjf rpi_toolchain_gcc6.tar.bz2
-    rm rpi_toolchain_gcc6.tar.bz2
+    downloader https://github.com/openframeworks/openFrameworks/releases/download/tools/rpi_toolchain.tar.gz
+    tar xjf rpi_toolchain.tar.gz
+    rm rpi_toolchain.tar.gz
+    mv cross-pi-gcc-10.3.0-1 rpi_toolchain
 }
 
 downloadFirmware(){
