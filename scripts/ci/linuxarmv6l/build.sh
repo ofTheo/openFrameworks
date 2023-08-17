@@ -27,10 +27,10 @@ export AR=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ar
 export LD=${TOOLCHAIN_ROOT}/bin/${GCC_PREFIX}-ld
 
 CROSS_PI_PATH=${OF_ROOT}/scripts/ci/$TARGET/rpi_toolchain
-export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
-export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
-export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
-export PLATFORM_LIBRARY_SEARCH_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$PLATFORM_LIBRARY_SEARCH_PATHS
+export TOOLCHAIN_LD_PATHS=$CROSS_PI_PATH/lib:$TOOLCHAIN_LD_PATHS
+export TOOLCHAIN_LD_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/lib:$TOOLCHAIN_LD_PATHS
+export TOOLCHAIN_LD_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib:$TOOLCHAIN_LD_PATHS
+export TOOLCHAIN_LD_PATHS=$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib:$TOOLCHAIN_LD_PATHS
 
 #export PLATFORM_LDFLAGS="-L$CROSS_PI_PATH/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/usr/lib/ -L$CROSS_PI_PATH/arm-linux-gnueabihf/libc/lib/"
 

@@ -255,6 +255,10 @@ endif
 		TOOLCHAIN_ROOT = /opt/cross/bin
 	endif
 
+	ifdef TOOLCHAIN_LD_PATHS
+		PLATFORM_LIBRARY_SEARCH_PATHS += $TOOLCHAIN_LD_PATHS
+	endif
+
 	ifdef GCC_PREFIX
 		#You have specified GCC_PREFIX with an environment variable
 	else
