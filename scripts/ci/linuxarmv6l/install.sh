@@ -36,14 +36,6 @@ downloadToolchain(){
     tar xvf rpi_toolchain_gcc8.tar.gz
     rm rpi_toolchain_gcc8.tar.gz
     mv cross-pi-gcc-8.3.0-1 rpi_toolchain
-    sudo ln -sf /usr/include/arm-linux-gnueabihf/asm/* /usr/include/asm/
-    sudo ln -sf /usr/include/arm-linux-gnueabihf/gnu/* /usr/include/gnu/
-    sudo ln -sf /usr/include/arm-linux-gnueabihf/bits/* /usr/include/bits/
-    sudo ln -sf /usr/include/arm-linux-gnueabihf/sys/* /usr/include/sys/
-    sudo ln -sf /usr/include/arm-linux-gnueabihf/openssl/* /usr/include/openssl/
-    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crtn.o /usr/lib/crtn.o
-    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crt1.o /usr/lib/crt1.o
-    sudo ln -sf /usr/lib/arm-linux-gnueabihf/crti.o /usr/lib/crti.o
 }
 
 downloadFirmware(){
