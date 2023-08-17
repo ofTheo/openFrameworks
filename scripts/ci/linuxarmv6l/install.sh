@@ -32,7 +32,9 @@ if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
 downloadToolchain(){
     echo "downloading toolchain"
     wget https://github.com/openframeworks/openFrameworks/releases/download/tools/rpi_toolchain.tar.gz
-    tar xjf rpi_toolchain.tar.gz
+    ls -la
+    file rpi_toolchain.tar.gz
+    tar xvf rpi_toolchain.tar.gz
     rm rpi_toolchain.tar.gz
     mv cross-pi-gcc-10.3.0-1 rpi_toolchain
 }
