@@ -36,5 +36,10 @@ jobs:
         run: |
           ./scripts/linux/download_libs.sh -a armv6l;
       - name: Build
+        env:
+          CC: arm-linux-gnueabihf-gcc
+          CXX: arm-linux-gnueabihf-g++
+          LD: arm-linux-gnueabihf-ld
         run: |
+          source ${{steps.pi-sysroot.outputs.shell-envsetup}}
           scripts/ci/linuxarmv6l/build.sh;
