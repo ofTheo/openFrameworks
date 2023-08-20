@@ -33,7 +33,9 @@ jobs:
         run: sudo apt-get -y -qq install crossbuild-essential-armhf
       - uses: actions/checkout@v3
       - name: Download libs
-        run: ./scripts/linux/download_libs.sh -a armv6l;
+        run: |
+          ls -la /opt/ 
+          ./scripts/linux/download_libs.sh -a armv6l;
       - name: Build
         run: |
           source ${{steps.pi-sysroot.outputs.shell-envsetup}}
