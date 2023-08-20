@@ -249,11 +249,6 @@ ifeq ($(CROSS_COMPILING),1)
 ifdef MAKEFILE_DEBUG
     $(info detected cross compiling $(CROSS_COMPILING))
 endif
-	ifdef TOOLCHAIN_ROOT
-		#You have specified TOOLCHAIN_ROOT with an environment variable
-	else
-		TOOLCHAIN_ROOT = /opt/cross/bin
-	endif
 
 	ifdef GCC_PREFIX
 		#You have specified GCC_PREFIX with an environment variable
@@ -261,10 +256,10 @@ endif
 		GCC_PREFIX = arm-linux-gnueabihf
 	endif
 
-	PLATFORM_CXX = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-g++
-	PLATFORM_CC = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-gcc
-	PLATFORM_AR = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-ar
-	PLATFORM_LD = $(TOOLCHAIN_ROOT)/bin/$(GCC_PREFIX)-ld
+	PLATFORM_CXX = $(GCC_PREFIX)-g++
+	PLATFORM_CC = $(GCC_PREFIX)-gcc
+	PLATFORM_AR = $(GCC_PREFIX)-ar
+	PLATFORM_LD = $(GCC_PREFIX)-ld
 
 	SYSROOT=$(RPI_ROOT)
 
