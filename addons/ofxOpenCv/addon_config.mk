@@ -89,7 +89,6 @@ linuxaarch64:
 	ADDON_LIBS_EXCLUDE = libs/opencv/%
 	ADDON_INCLUDES_EXCLUDE = libs/opencv
 	ADDON_INCLUDES_EXCLUDE += libs/opencv/%
-	ADDON_LDFLAGS = blas lapack
 
 msys2:
 	ADDON_PKG_CONFIG_LIBRARIES = opencv4
