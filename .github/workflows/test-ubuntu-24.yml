@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ccache: ccache
   RELEASE: latest
 
 jobs:
