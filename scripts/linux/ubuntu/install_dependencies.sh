@@ -208,13 +208,12 @@ fi
 if [ $MAJOR_VERSION -gt 21 ]; then
 echo "Ensuring latest libunwind-dev is installed..."
 apt-get ${FORCE_YES} -qq install --only-upgrade libunwind-dev || installPackages libunwind-dev
-
 PACKAGES+=" libharfbuzz-dev"
 PACKAGES+=" gstreamer1.0-vaapi"
 PACKAGES+=" gstreamer1.0-libav"
 fi
 
-#apt-get -y -qq install ${PACKAGES}
+apt-get -y -qq install ${PACKAGES}
 installPackages ${PACKAGES}
 
 # Install libgconf-2-4 only if its availble 
